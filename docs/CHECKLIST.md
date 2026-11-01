@@ -36,8 +36,8 @@ Created 2026-10-16. Shared team checklist: tick items off as they're done.
 
 ## Deadlines
 
-- **Nov 3:** if the replacement servos haven't arrived, buy them on Amazon.ca.
-- **Oct 21–27:** midterms for all three (Vyom, Ishaan, Siddharth). **Dec 10–22:** finals.
+- **Mon Nov 2:** order the replacement MG996R (180°) and the missing power parts from **Amazon.ca** (D11).
+- **Sun Nov 22:** V1 works. **Sun Nov 29:** demo video. **Sun Dec 6:** hard stop. Finals ~Dec 7–20.
 
 ## Next session (was Sat Oct 17, done Oct 31)
 

@@ -1,44 +1,55 @@
-# Timeline v3 (2026-10-31): 3-person plan
+# Timeline v4 (2026-10-31): V1 finished in November
 
-> **Owners changed later on Oct 31 (D8):** Vyom = laptop software + links/base CAD + printing; Ishaan = Arduino software + signal wiring + calibration; Siddharth = power + measurements/arm size + gripper CAD + assembly. The plan page has the per-date owners; the dates below are unchanged.
+The plain-language version is the team plan page: https://claude.ai/artifact/FYa2ohKX7dTyKSVxJqvHiQ. Keep the two in sync.
 
-The shareable version (with the owner cards and handoffs) is the team plan page: https://claude.ai/artifact/FYa2ohKX7dTyKSVxJqvHiQ
-Keep this file and that page in sync.
+**Why v4:**
+- Finals run from about Dec 7 to Dec 20, then everyone travels.
+- From January, Ishaan and Siddharth are on co-op away from Waterloo; Vyom has a study term.
+- So all team work ends **Sun Dec 6**. V1 (web-page control, D10) has to work by **Sun Nov 22** and be demoed by **Sun Nov 29**.
+- After Dec 6 the arm stays with Vyom. January = Vyom solo: write-up + V2 (gestures).
+- **Hours needed in November:** Vyom ~8–10 h/week, Ishaan and Siddharth ~6–8 h/week each.
 
-**What changed from v2:**
-- All SolidWorks.
-- Vyom is at ~5–8 h/week (updated Oct 31) and keeps firmware. Siddharth takes the laptop side of the protocol as a fallback.
-- Vyom's SolidWorks part is the base turntable.
-- Ishaan's and Siddharth's ~5–8 h/week is an assumption to confirm.
+## Dated deliverables
 
-## Key dates
+| Date | Owner | Deliverable |
+| --- | --- | --- |
+| Sun Nov 1 | Vyom | GitHub project ✓ |
+| Sun Nov 1 | Siddharth | Measurement sheet (sizes + masses); converter set to 6.0 V |
+| Sun Nov 1 | Ishaan | Motor test: do the MG996Rs hold an angle? |
+| Sun Nov 1 | All | Torque estimates (independent) |
+| Mon Nov 2 | All | **Order from Amazon.ca:** 3 (+1) MG996R 180°, 9 V PD trigger, fuse holder + 3–4 A fuse, servo extensions, M3/M2 screws |
+| Mon Nov 2 | Siddharth (call) | Arm size agreed |
+| Mon Nov 2 → Tue Nov 3 | Vyom | Test coupon printed (Batch A) and measured |
+| Wed Nov 4 | Vyom | `config/arm.yaml`: lengths, joint limits, park/home poses |
+| Thu Nov 5 | Siddharth | Power board working (Ishaan checks) |
+| Fri Nov 6 | Siddharth | Gripper CAD (Vyom checks) |
+| Fri Nov 6 | Ishaan | Pin map + firmware v0 tested on an MG90S (Vyom checks) |
+| Fri Nov 6 | All | Cable + board plan |
+| Sat Nov 7 | Vyom | Links + base CAD |
+| **Sun Nov 8** | Vyom + all | **Full assembly model, design review call, STL export** |
+| Mon–Thu Nov 9–12 | Vyom | **Batch B: print the whole arm** |
+| Fri Nov 13 | Ishaan | Servo cables/harness; new MG996Rs confirmed in hand |
+| Sun Nov 15 | Vyom | Control web page (sliders + point-and-go + arm drawing; laptop + phone) |
+| Sun Nov 15 | Ishaan | Laptop↔Arduino comms + motion limiter |
+| Sat–Sun Nov 14–15 | All (Siddharth leads) | Build weekend: assembly starts |
+| Tue Nov 17 | Siddharth | Arm assembled + powered; misfit list → Vyom |
+| Wed Nov 18 | Ishaan / Siddharth | Arm wired / peak current measured |
+| Fri Nov 20 | Vyom | Batch C reprints (≤ $5, only if needed) |
+| Sat Nov 21 | Ishaan | Calibration done; every joint moves from the laptop |
+| **Sun Nov 22** | All | **V1 works: the page drives the real arm** |
+| **Sun Nov 29** | All | **Demo video (pick-and-place), repeatability test, photos/renders, write-up notes** |
+| Nov 30 – Sun Dec 6 | All | Spare week; hard stop. The arm goes home with Vyom. |
+| ~Dec 7 – 20 | | Finals; then travel |
+| January | Vyom | README/write-up with measurements; V2 gesture control |
 
-- **Tue Nov 3:** replacement MG996R (180°) ordered; link lengths agreed (torque check by all three)
-- **Wed Nov 4:** `config/arm.yaml` v0 (link lengths, joint limits, park + home poses), from Ishaan
-- **Sun Nov 8:** pin map and power-on order from Siddharth; firmware v0 to Siddharth for review
-- **Thu Nov 12:** Vyom's base turntable part; power board/switch mounting + cable routing agreed (Ishaan ↔ Siddharth)
-- **Fri Nov 13:** design review (all three) → STL export by Sun Nov 15
-- **Mon–Fri Nov 16–20:** print Batch B (the whole arm)
-- **Sat Nov 28:** calibration measurements from Siddharth
-- **Wed Dec 9:** live gesture control (mimic mode)
-- **Dec 10–22:** finals, paused
-- **~Sat Jan 10:** pick-and-place demo, video, README, resume bullets
+## Critical path
 
-## Week by week
+Measurement sheet (Nov 1) → test print (Nov 3) → links/base CAD (Nov 7) → model + review + STLs (Nov 8) → print (Nov 9–12) → assembly (Nov 17) → calibration (Nov 21) → V1 works (Nov 22) → demo (Nov 29).
 
-| Dates | Vyom | Ishaan | Siddharth | Done by the end |
-| --- | --- | --- | --- | --- |
-| Oct 31 – Nov 1 | Torque check; create the repo, push docs | Install SolidWorks; measure all parts; torque check | Servo test; LM2596 to 6.0 V; torque check | Servos approved, measurement sheet, repo shared |
-| Nov 2 – 8 | Firmware v0 (bench, MG90S); simulator | Coupon CAD + **Batch A** (Mon–Wed); layout → `arm.yaml`; start the assembly | Power board; one servo through the full chain; pin map | Servos ordered (Nov 3), clearances recorded, firmware passes the test lines |
-| Nov 9 – 15 | Base turntable (Thu); hand → simulated arm; laptop side of the protocol | Full assembly; collision/range checks; mass properties → torque re-check | Peak current; wiring paths; firmware review | **Design review Fri Nov 13**, STLs by Sun |
-| Nov 16 – 20 | Motion limiter; calibration code | **Batch B**: whole arm | Wiring harness | All parts printed |
-| Nov 21 – 29 | Every joint moves from the laptop (low speed) | Assemble; list misfits | Wire the arm; power-on order test; calibration measurements | Arm assembled, wired, calibrated |
-| Nov 30 – Dec 9 | Real-arm IK; mimic mode | **Batch C** (failed parts only, ≤ $5) | First repeatability test | Live gesture control |
-| Dec 10 – 22 | Finals | | | |
-| Dec 23 – ~Jan 10 | Command gestures, record/replay, README | CAD renders, photos | Schematic, metrics | Demo + write-up |
+Second chain: motor test → Amazon.ca order (Nov 2) → parts arrive (~Nov 6) → power board + assembly.
 
-## Printing (D5)
+## If we fall behind, cut in this order
 
-- **A:** coupon, ~$1, Nov 2–4.
-- **B:** whole arm, ≤ 300 g, ~$15–20, Nov 16–20.
-- **C:** failed parts only, ≤ $5, Nov 30 – Dec 2.
+1. Phone support (laptop browser only)
+2. Point-and-go (sliders only)
+3. A simpler gripper (one moving jaw)
