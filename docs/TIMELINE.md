@@ -19,6 +19,7 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 | Sun Nov 1 | All | Torque estimates (independent) |
 | Mon Nov 2 | All | **Order from Amazon.ca:** 3 (+1) MG996R 180°, 9 V PD trigger, fuse holder + 3–4 A fuse, servo extensions, M3/M2 screws |
 | Mon Nov 2 | Siddharth (call) | Arm size agreed |
+| ~Wed Nov 4 | All | Amazon.ca parts arrive (needed for the power board on Thu Nov 5) |
 | Mon Nov 2 → Tue Nov 3 | Vyom | Test coupon printed (Batch A) and measured |
 | Wed Nov 4 | Vyom | `config/arm.yaml`: lengths, joint limits, park/home poses |
 | Thu Nov 5 | Siddharth | Power board working (Ishaan checks) |
@@ -46,7 +47,7 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 
 Measurement sheet (Nov 1) → test print (Nov 3) → links/base CAD (Nov 7) → model + review + STLs (Nov 8) → print (Nov 9–12) → assembly (Nov 17) → calibration (Nov 21) → V1 works (Nov 22) → demo (Nov 29).
 
-Second chain: motor test → Amazon.ca order (Nov 2) → parts arrive (~Nov 6) → power board + assembly.
+Second chain: motor test → Amazon.ca order (Nov 2) → parts arrive (~Wed Nov 4) → power board + assembly.
 
 ## If we fall behind, cut in this order
 

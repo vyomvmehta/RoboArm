@@ -101,3 +101,9 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 - **What changes:** CAD in one week (review Sun Nov 8, was Nov 13). The whole arm printed Nov 9–12 (was Nov 16–20). Missing parts (incl. the MG996R replacements) bought on **Amazon.ca on Mon Nov 2** for speed instead of AliExpress. Build days Nov 14–15 and Nov 22. Hours: Vyom ~8–10, others ~6–8 h/week in November.
 - **Cut order if behind:** phone support → point-and-go → a simpler gripper.
 - **Alternative considered:** keep the Jan 10 target. Rejected: only Vyom will be in Waterloo after December.
+
+## D12: Torque estimate: one owner + one checker (2026-11-01, Vyom)
+
+- **Decision:** Vyom does the shoulder-torque estimate (Claude checks the method and arithmetic); **Siddharth re-checks it against the real masses** from his measurement sheet. Replaces "all three do it independently".
+- **Why:** saves two people ~30 min each in the busiest week. A check against measured masses still catches the riskiest errors (wrong inputs), which a method check alone wouldn't.
+- **Alternative:** three independent estimates (stronger cross-check, more time).
