@@ -1,0 +1,11 @@
+# CAD and print files are binary: never try to merge or diff them as text
+*.SLDPRT binary
+*.SLDASM binary
+*.SLDDRW binary
+*.sldprt binary
+*.sldasm binary
+*.slddrw binary
+*.stl binary
+*.3mf binary
+*.step binary
+*.STEP binary

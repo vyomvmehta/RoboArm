@@ -1,0 +1,28 @@
+# Private notes (kept on Vyom's laptop only)
+CLAUDE.md
+docs/PROGRESS.md
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Logged runs: keep small CSVs, not raw video
+runs/**/*.mp4
+runs/**/*.avi
+runs/**/*.mov
+
+# SolidWorks temp/lock and backup files
+~$*
+*.SLDBAK
+*.sldbak
+
+# Arduino / editor / OS
+build/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
