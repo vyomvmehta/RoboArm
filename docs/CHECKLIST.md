@@ -31,7 +31,7 @@ Created 2026-10-16. Shared team checklist: tick items off as they're done.
 - [ ] **Power wiring:** use thick wire (~18–20 AWG) for the servo trunk. The 22 AWG cable is for signals and short runs.
 - [ ] **Torque calculation:** each of the three does it independently, then compare.
 - [ ] **Protocol:** Ishaan + Siddharth read `docs/PROTOCOL.md` draft v1 and agree, especially the park-pose requirement
-- [ ] **Repo:** `git init` in `C:\Projects\RoboArm`, add Ishaan and Siddharth as collaborators, protect `main`.
+- [x] **Repo (2026-10-31):** public `vyomvmehta/RoboArm`, `main` protected (PR + 1 approval, no force-push). Ishaan + Siddharth invited.
 - [ ] Parts arrived? Confirm that every ordered item arrived and nothing was left out.
 
 ## Deadlines

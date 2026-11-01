@@ -81,7 +81,7 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 
 ## D9: Repository setup (2026-10-31, Vyom)
 
-- **Public** GitHub repo `gesture-robot-arm` (vyomvmehta). Branch protection on `main` (PR + 1 approval, no force-push). Collaborators: Ishaan, Siddharth.
+- **Public** GitHub repo `RoboArm` (vyomvmehta/RoboArm). Branch protection on `main` (PR + 1 approval, no force-push). Collaborators: Ishaan, Siddharth.
 - **Not pushed (stays on Vyom's laptop):** `CLAUDE.md` and `docs/PROGRESS.md`. Pushed: README, PROTOCOL, TIMELINE, DECISIONS, CHECKLIST, code, tests.
 - **Credit for Claude:** a "How we built this" section in the README only; **no Co-Authored-By lines** on commits.
 - *Alternatives:* private until the demo (needs GitHub Pro for branch protection); sharing CLAUDE.md too.
