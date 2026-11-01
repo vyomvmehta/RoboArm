@@ -100,5 +100,5 @@ A reset mid-run (cable pulled) leaves the arm limp, so the park-pose requirement
 ## Still to decide
 
 - Park and home pose angles (after the CAD exists).
-- Per-joint speed caps (°/s) for the motion limiter (a core piece Vyom writes).
+- Per-joint speed caps (°/s) for the motion limiter. **Implemented by Ishaan** (firmware owner since D8); values tuned during calibration (Nov 21).
 - Whether the laptop should be able to change speed caps at run time (probably not in v1).

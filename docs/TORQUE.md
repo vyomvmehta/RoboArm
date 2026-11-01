@@ -14,13 +14,20 @@
 | Wrist motor MG90S (spec sheet) | 13.4 | 21 | 0.281 |
 | Gripper parts (est.) + gripper motor MG90S | 33.4 | 24.5 | 0.818 |
 | Block (payload) | 30 | 28 | 0.840 |
-| **Total** | | | **3.03** |
+| Fasteners, motor arms, cables (allowance, spread along the arm) | 15 | ~14 | 0.210 |
+| **Total** | | | **3.24** |
 
-**Result:** 3.03 / 9.4 kg·cm (MG996R stall at 4.8 V) = **32 % of stall**, within the ≤ 50 % rule. At 6 V the rated stall is higher (~11 kg·cm), giving more margin.
+**Result:** 3.24 / 9.4 kg·cm (MG996R stall at 4.8 V) = **34 % of stall**, within the ≤ 50 % rule. (Without the hardware allowance: 3.03 kg·cm, 32 %.)
+
+**Static only:** this is the torque to *hold* the arm still. Accelerating or decelerating the arm adds torque on top, which is one reason for the 50 % margin. The firmware motion limiter keeps accelerations gentle. At 6 V the rated stall is higher (~11 kg·cm), giving more margin.
 
 **Why ≤ 50 %:** stall is the motor's maximum; holding near it overheats the motor. Moving the arm (not just holding it) needs extra torque. Clone servos are often below spec. Printed-part masses are still estimates.
 
 **Biggest contributors:** the block (0.84) and the gripper (0.82). They're furthest from the shoulder, so a gram at the tip costs about 5× a gram near the shoulder. **Keep the gripper light.**
+
+## Elbow check (same worst case)
+
+About the elbow axis: forearm 20 g × 5 cm + wrist motor 13.4 g × 10 cm + gripper 33.4 g × 13.5 cm + block 30 g × 17 cm = 0.100 + 0.134 + 0.451 + 0.510 = **1.20 kg·cm**, i.e. **13 % of MG996R stall**. No concern.
 
 **Recommendation for the arm-size call (Mon Nov 2):** keep ~11 + 10 + 7 cm. Torque isn't the limit; check that ~28 cm reaches the demo's pick and place spots.
 

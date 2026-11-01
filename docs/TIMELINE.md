@@ -16,7 +16,7 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 | Sun Nov 1 | Vyom | GitHub project ✓ |
 | Sun Nov 1 | Siddharth | Measurement sheet (sizes + masses); converter set to 6.0 V |
 | Sun Nov 1 | Ishaan | Motor test: do the MG996Rs hold an angle? |
-| Sun Nov 1 | All | Torque estimates (independent) |
+| Sun Nov 1 | Vyom (Siddharth checks) | Shoulder torque check, D12 ([TORQUE.md](TORQUE.md)) |
 | Mon Nov 2 | All | **Order from Amazon.ca:** 3 (+1) MG996R 180°, 9 V PD trigger, fuse holder + 3–4 A fuse, servo extensions, M3/M2 screws |
 | Mon Nov 2 | Siddharth (call) | Arm size agreed |
 | ~Wed Nov 4 | All | Amazon.ca parts arrive (needed for the power board on Thu Nov 5) |
@@ -42,6 +42,12 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 | Nov 30 – Sun Dec 6 | All | Spare week; hard stop. The arm goes home with Vyom. |
 | ~Dec 7 – 20 | | Finals; then travel |
 | January | Vyom | README/write-up with measurements; V2 gesture control |
+
+## Printing (D5, still applies)
+
+- **Batch A:** test coupon, ~10–15 g, ~$1 (Mon Nov 2 → measured Tue Nov 3)
+- **Batch B:** the whole arm, **≤ 300 g PLA, ~$15–20** (Mon–Thu Nov 9–12)
+- **Batch C:** failed parts only, **≤ $5 cap** (by Fri Nov 20)
 
 ## Critical path
 

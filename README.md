@@ -1,6 +1,6 @@
-# Gesture-Controlled Robot Arm
+# RoboArm
 
-A 5-servo desktop robot arm, designed in SolidWorks and 3D printed.
+A 5-servo desktop robot arm, designed in SolidWorks and 3D printed. Web-controlled in V1, gesture-controlled in V2.
 
 - **V1 (in progress):** controlled from a web page on a laptop or phone. Drag a slider per joint, or type a point and the arm's inverse kinematics moves the gripper there.
 - **V2 (next):** controlled by hand gestures. A webcam tracks your hand with MediaPipe; move your hand and the arm follows, pinch to close the gripper.
@@ -30,7 +30,8 @@ V2: webcam + hand tracking ──┘                                     (USB se
 ```
 arm/kinematics/   forward + inverse kinematics
 tests/            unit tests (run: python -m pytest)
-docs/             PROTOCOL (laptop↔Arduino messages), TIMELINE, DECISIONS, CHECKLIST
+docs/             PROTOCOL (laptop↔Arduino messages), TORQUE (arm-size strength check),
+                  TIMELINE, DECISIONS, CHECKLIST
 ```
 
 More folders (CAD, firmware, vision, config) arrive as each part is built.
