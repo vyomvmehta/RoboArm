@@ -81,7 +81,29 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 
 ## D9: Repository setup (2026-10-31, Vyom)
 
-- **Public** GitHub repo `gesture-robot-arm` (vyomvmehta). Branch protection on `main` (PR + 1 approval, no force-push). Collaborators: Ishaan, Siddharth.
+- **Public** GitHub repo `RoboArm` (vyomvmehta/RoboArm). Branch protection on `main` (PR + 1 approval, no force-push). Collaborators: Ishaan, Siddharth.
 - **Not pushed (stays on Vyom's laptop):** `CLAUDE.md` and `docs/PROGRESS.md`. Pushed: README, PROTOCOL, TIMELINE, DECISIONS, CHECKLIST, code, tests.
 - **Credit for Claude:** a "How we built this" section in the README only; **no Co-Authored-By lines** on commits.
 - *Alternatives:* private until the demo (needs GitHub Pro for branch protection); sharing CLAUDE.md too.
+
+## D10: V1 = interface control, V2 = gesture control (2026-10-31, team; Siddharth's idea)
+
+- **V1 (the plan up to the January demo):** the arm is controlled from a **web page** served by the laptop. It opens in the laptop's browser or on a phone (over a hotspot, since UW eduroam often blocks phone→laptop connections). Two modes: **a slider per joint** (testing, calibration) and **point-and-go** (type a target x/y/z and the IK solves it). V1 demo: **live pick-and-place from the page** (no record/replay in V1).
+- **V2 (later):** hand-gesture control (MediaPipe) as originally planned, swapping the web page for the camera as the input. Vyom starts V2 hand tracking early **only if V1 software is on track**.
+- **Why:** removes the riskiest, least predictable part (single-camera depth, jitter, smoothing lag) from the critical path, so a working arm is far more likely by Dec 9. The laptop↔Arduino protocol, IK, calibration and firmware are identical in V1 and V2; only the input changes.
+- **Alternatives:** gestures straight away (original plan; higher risk); a desktop-only window (simpler, but no phone control).
+- **Trade-off:** "gesture-controlled" is only true once V2 ships. Until then the resume line is "web/phone-controlled 5-DOF arm with IK".
+
+## D11: Finish V1 in November (2026-10-31, team)
+
+- **Constraint:** finals run from about Dec 7 to Dec 20, then travel. From January, Ishaan and Siddharth are on co-op away from Waterloo; Vyom has a study term.
+- **Decision:** compress V1 into November. V1 works by **Sun Nov 22**, demo video by **Sun Nov 29**, spare week to **Sun Dec 6** (hard stop). The arm stays with Vyom. January = Vyom solo: write-up + V2. See `docs/TIMELINE.md` v4.
+- **What changes:** CAD in one week (review Sun Nov 8, was Nov 13). The whole arm printed Nov 9–12 (was Nov 16–20). Missing parts (incl. the MG996R replacements) bought on **Amazon.ca on Mon Nov 2** for speed instead of AliExpress. Build days Nov 14–15 and Nov 22. Hours: Vyom ~8–10, others ~6–8 h/week in November.
+- **Cut order if behind:** phone support → point-and-go → a simpler gripper.
+- **Alternative considered:** keep the Jan 10 target. Rejected: only Vyom will be in Waterloo after December.
+
+## D12: Torque estimate: one owner + one checker (2026-11-01, Vyom)
+
+- **Decision:** Vyom does the shoulder-torque estimate (Claude checks the method and arithmetic); **Siddharth re-checks it against the real masses** from his measurement sheet. Replaces "all three do it independently".
+- **Why:** saves two people ~30 min each in the busiest week. A check against measured masses still catches the riskiest errors (wrong inputs), which a method check alone wouldn't.
+- **Alternative:** three independent estimates (stronger cross-check, more time).

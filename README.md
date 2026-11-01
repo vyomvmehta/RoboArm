@@ -1,16 +1,20 @@
-# Gesture-Controlled Robot Arm
+# RoboArm
 
-A 5-servo desktop robot arm, designed in SolidWorks and 3D printed, that copies your hand. A laptop webcam tracks your hand with MediaPipe: move your hand and the arm moves; pinch your fingers and the gripper closes.
+A 5-servo desktop robot arm, designed in SolidWorks and 3D printed. Web-controlled in V1, gesture-controlled in V2.
 
-**Status (Nov 2026):** in progress. The plan, the laptop↔Arduino protocol and the arm's kinematics (with tests) are done. CAD, printing and electronics are next. Target: live gesture control in December 2026, then a pick-and-place demo and write-up in January 2027.
+- **V1 (in progress):** controlled from a web page on a laptop or phone. Drag a slider per joint, or type a point and the arm's inverse kinematics moves the gripper there.
+- **V2 (next):** controlled by hand gestures. A webcam tracks your hand with MediaPipe; move your hand and the arm follows, pinch to close the gripper.
+
+**Status (Nov 2026):** in progress. The plan, the laptop↔Arduino protocol and the arm's kinematics (with tests) are done. CAD, printing and electronics are next. Target: V1 controlled live from the web page in December 2026, then a pick-and-place demo and write-up in January 2027. V2 (gestures) follows.
 
 **Team:** Vyom Mehta, Ishaan, Siddharth (University of Waterloo).
 
 ## How it works
 
 ```
-Webcam → Laptop (Python)                                    → Arduino Nano → PCA9685 → 5 servos
-         hand landmarks → smoothing → target point → IK          (USB serial)    (I²C)
+V1: web page (laptop/phone) ─┐
+                             ├→ Laptop (Python): target point → IK → Arduino Nano → PCA9685 → 5 servos
+V2: webcam + hand tracking ──┘                                     (USB serial)    (I²C)
 ```
 
 | Joint | Servo | Job |
@@ -26,7 +30,8 @@ Webcam → Laptop (Python)                                    → Arduino Nano �
 ```
 arm/kinematics/   forward + inverse kinematics
 tests/            unit tests (run: python -m pytest)
-docs/             PROTOCOL (laptop↔Arduino messages), TIMELINE, DECISIONS, CHECKLIST
+docs/             PROTOCOL (laptop↔Arduino messages), TORQUE (arm-size strength check),
+                  TIMELINE, DECISIONS, CHECKLIST
 ```
 
 More folders (CAD, firmware, vision, config) arrive as each part is built.

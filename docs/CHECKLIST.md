@@ -29,15 +29,15 @@ Created 2026-10-16. Shared team checklist: tick items off as they're done.
 - [ ] **PCA9685 board:** check how much current its V+ path can carry (Siddharth).
 - [ ] **Measure peak current** on a bench supply with a current display (UWFE or an EE lab) with the arm moving (D4).
 - [ ] **Power wiring:** use thick wire (~18–20 AWG) for the servo trunk. The 22 AWG cable is for signals and short runs.
-- [ ] **Torque calculation:** each of the three does it independently, then compare.
+- [ ] **Torque check (D12):** done by Vyom ([TORQUE.md](TORQUE.md)); Siddharth to check it against measured masses.
 - [ ] **Protocol:** Ishaan + Siddharth read `docs/PROTOCOL.md` draft v1 and agree, especially the park-pose requirement
-- [ ] **Repo:** `git init` in `C:\Projects\RoboArm`, add Ishaan and Siddharth as collaborators, protect `main`.
+- [x] **Repo (2026-10-31):** public `vyomvmehta/RoboArm`, `main` protected (PR + 1 approval, no force-push). Ishaan + Siddharth invited.
 - [ ] Parts arrived? Confirm that every ordered item arrived and nothing was left out.
 
 ## Deadlines
 
-- **Nov 3:** if the replacement servos haven't arrived, buy them on Amazon.ca.
-- **Oct 21–27:** midterms for all three (Vyom, Ishaan, Siddharth). **Dec 10–22:** finals.
+- **Mon Nov 2:** order the replacement MG996R (180°) and the missing power parts from **Amazon.ca** (D11).
+- **Sun Nov 22:** V1 works. **Sun Nov 29:** demo video. **Sun Dec 6:** hard stop. Finals ~Dec 7–20.
 
 ## Next session (was Sat Oct 17, done Oct 31)
 

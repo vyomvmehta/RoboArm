@@ -1,3 +1,6 @@
+# Store text files with LF line endings in the repo, whatever each laptop's git settings
+* text=auto
+
 # CAD and print files are binary: never try to merge or diff them as text
 *.SLDPRT binary
 *.SLDASM binary
