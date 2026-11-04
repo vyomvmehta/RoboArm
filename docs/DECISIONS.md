@@ -107,3 +107,31 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 - **Decision:** Vyom does the shoulder-torque estimate (Claude checks the method and arithmetic); **Siddharth re-checks it against the real masses** from his measurement sheet. Replaces "all three do it independently".
 - **Why:** saves two people ~30 min each in the busiest week. A check against measured masses still catches the riskiest errors (wrong inputs), which a method check alone wouldn't.
 - **Alternative:** three independent estimates (stronger cross-check, more time).
+
+## D13: Electronics inside the base (2026-11-01, Vyom; team to confirm on the Nov 2 call)
+
+- **Decision:** the Nano, PCA9685, power board (LM2596, fuse, capacitor) and kill switch go **inside the arm's base**, which doubles as an enclosure. The links carry only the motors and their cables.
+- **Why:** it's a portfolio piece, so it should look finished; a closed base also protects the boards and is easier to carry.
+- **Requirements this creates** (for the cable and board plan and the base CAD):
+  - **Access without taking the arm apart:** a bottom plate or side panel held by screws, so boards can be probed and re-plugged during the current measurement (Nov 18) and calibration (Nov 21).
+  - **Openings:** kill switch on the front, within reach; USB-C to the Nano; the power cable in.
+  - **Vent slots** beside the LM2596 (it gets warm under load).
+  - **Cables** from the turntable into the base pass close to the rotation axis, with slack for the base's full rotation.
+  - **Stability:** the stretched-out arm tries to tip the base, so give it a wide, heavy bottom (e.g. an MDF plate) that can be clamped or weighted.
+- **Cost:** roughly 50–80 g of extra PLA (about $3–5) for the enclosure walls. Check against the ≤ 300 g batch B cap (D5) at the Nov 8 review; if it's over, make the bottom plate from MDF/plywood instead of printing it.
+- **Alternatives:** boards on an open plate beside the base (cheaper, easiest to probe, no heat issue, but looks unfinished); boards on the arm (rejected: adds torque at the shoulder and wires flexing across joints).
+
+## D15: Print clearances from the test print (2026-11-03, Vyom; provisional until the two checks below)
+
+Batch A (screw strip + bearing block), printed at the RPC. Measured with calipers by Vyom + Siddharth. **Valid for this printer and these settings only**: ask for the same printer for batch B.
+
+| Feature | Drawn (mm) | Measured (mm) | Fit | Use |
+| --- | --- | --- | --- | --- |
+| M3 hole | 3.0 / 3.2 / 3.4 | 2.79 / 2.90 / 3.2–3.4 (oval) | screw test still to do | **Draw 3.45** (Vyom: 3.4 came out 3.2 × 3.4, nearly enough; more risks a loose fit) |
+| M3 nut pocket (across flats) | 5.6 / 5.8 / 6.0 | 5.54 / 5.80 / 5.97 | 5.6: drops in, doesn't spin (falls out); 5.8 spins slightly; 6.0 spins | **Draw 5.6** |
+| M3 nut pocket depth | 2.6 | 2.6–2.7 | nut sticks up in all three | **Nut thickness + 0.3** (measure the nut) |
+| 608 seat | 22.0 / 22.2 / 22.4 | 21.97 / 22.07 / 22.32 | 22.0: firm press, hard to remove; 22.2: stays in, easy to remove; 22.4: drops through. Bearing spins freely in both | **22.0** where the bearing stays in for good; **22.2** where it must come out |
+
+- **Lesson:** shrinkage depends on size. Small holes lost 0.2–0.3 mm; the 22 mm seats and the hexagons lost only about 0.03–0.1 mm. One global "add 0.2 mm" rule would have been wrong for both. (Before printing, Claude predicted 22.2 would be the press fit; it was 22.0.)
+- **Still to check:** (1) push a real M3 screw through the 3.4 hole (borrowed from RidgidWare); if it slides, 3.45 has a little margin; (2) measure the nut's thickness to set the pocket depth.
+- Motor pockets and the motor-arm recess are still untested (frames pending the caliper numbers).
