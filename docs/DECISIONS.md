@@ -136,10 +136,11 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 - **Still to check:** (1) push a real M3 screw through the 3.4 hole (borrowed from RidgidWare); if it slides, 3.45 has a little margin; (2) measure the nut's thickness to set the pocket depth.
 - Motor pockets and the motor-arm recess are still untested (frames pending the caliper numbers).
 
-## D16: Servo power from the Apple 96 W charger at 15 V, through an XL4015 (2026-11-03, Vyom + Siddharth). Updates D4.
+## D16: Servo power from the Apple 96 W charger at 15 V; try the LM2596 first (2026-11-03, Vyom + Siddharth). Updates D4.
 
-- **Chain:** Apple 96 W USB-C charger → USB-C PD trigger set to **15 V** → **XL4015** buck converter (CC/CV version) set to **6.0 V** → **5 A slow-blow fuse** → kill switch → motor rail (2200 µF / 16 V) → PCA9685 V+. Nano powered from the laptop's USB; all grounds tied.
-- **Why:** at 9 V the charger gives only 3 A (27 W, roughly 3.8 A at 6 V), and the LM2596 manages about 2 A continuous. The arm's realistic peak is about 3–5 A at 6 V. At 15 V the charger offers 45 W, and the XL4015 is rated about 5 A. The LM2596 stays as the spare.
-- **Fuse:** the 8 A fuses we own are too big to protect a 5 A converter; buy 5 A slow-blow (3.6 × 10 mm to match) and a holder.
-- **Risk:** if the arm pulls more than the charger agreed to, a PD charger cuts power briefly (motors limp, then a jump when it returns). The Nov 18 current measurement checks the margin. While the charger runs the arm, the laptop runs on battery.
-- **Alternatives:** a 6 V ≥ 5 A barrel supply (simplest, no trigger or converter); the original 9 V + LM2596 (marginal).
+- **Chain:** Apple 96 W USB-C charger → USB-C PD trigger (ZY12PDN) set to **15 V** → **LM2596** set to **6.0 V** → **5 A slow-blow fuse** → kill switch → motor rail (2200 µF / 16 V) → PCA9685 V+. Nano powered from the laptop's USB; all grounds tied.
+- **Why 15 V:** at 9 V the charger offers only 3 A (27 W, roughly 3.8 A at 6 V); at 15 V it offers 45 W, plenty for the arm's realistic 3–5 A peaks at 6 V.
+- **Why the LM2596 first:** we already own it. It's good for about 2 A continuous (3 A peak, with a heatsink), and the chip has its own current limit and thermal shutdown. **Test it** on the power board (one MG996R held stalled for 1–2 s) and at the Nov 18 current measurement. **If it sags, gets too hot or cuts out, switch to an XL4015 5 A CC/CV module** (about $5–8).
+- **Fuse:** 5 A slow-blow, protecting the wiring against shorts (the LM2596 limits itself). The 8 A fuses we own are being returned.
+- **Risk:** if the arm pulls more than the charger agreed to, a PD charger cuts power briefly (motors limp, then a jump when it returns). While the charger runs the arm, the laptop runs on battery.
+- **Alternatives:** buy the XL4015 now (more margin, about $6, but delivery lead time); a 6 V ≥ 5 A barrel supply (simplest); the original 9 V trigger (marginal).
