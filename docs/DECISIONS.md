@@ -123,7 +123,7 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 
 ## D15: Print clearances from the test print (2026-11-03, Vyom; provisional until the two checks below)
 
-Batch A (screw strip + bearing block), printed at the RPC. Measured with calipers by Vyom + Siddharth. **Valid for this printer and these settings only**: ask for the same printer for batch B.
+Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA Basic (black), default profile** (0.4 mm nozzle, 0.2 mm layers). Measured with calipers by Vyom + Siddharth. **Valid for this printer, filament and profile only**: print batch B the same way.
 
 | Feature | Drawn (mm) | Measured (mm) | Fit | Use |
 | --- | --- | --- | --- | --- |
@@ -135,3 +135,11 @@ Batch A (screw strip + bearing block), printed at the RPC. Measured with caliper
 - **Lesson:** shrinkage depends on size. Small holes lost 0.2–0.3 mm; the 22 mm seats and the hexagons lost only about 0.03–0.1 mm. One global "add 0.2 mm" rule would have been wrong for both. (Before printing, Claude predicted 22.2 would be the press fit; it was 22.0.)
 - **Still to check:** (1) push a real M3 screw through the 3.4 hole (borrowed from RidgidWare); if it slides, 3.45 has a little margin; (2) measure the nut's thickness to set the pocket depth.
 - Motor pockets and the motor-arm recess are still untested (frames pending the caliper numbers).
+
+## D16: Servo power from the Apple 96 W charger at 15 V, through an XL4015 (2026-11-03, Vyom + Siddharth). Updates D4.
+
+- **Chain:** Apple 96 W USB-C charger → USB-C PD trigger set to **15 V** → **XL4015** buck converter (CC/CV version) set to **6.0 V** → **5 A slow-blow fuse** → kill switch → motor rail (2200 µF / 16 V) → PCA9685 V+. Nano powered from the laptop's USB; all grounds tied.
+- **Why:** at 9 V the charger gives only 3 A (27 W, roughly 3.8 A at 6 V), and the LM2596 manages about 2 A continuous. The arm's realistic peak is about 3–5 A at 6 V. At 15 V the charger offers 45 W, and the XL4015 is rated about 5 A. The LM2596 stays as the spare.
+- **Fuse:** the 8 A fuses we own are too big to protect a 5 A converter; buy 5 A slow-blow (3.6 × 10 mm to match) and a holder.
+- **Risk:** if the arm pulls more than the charger agreed to, a PD charger cuts power briefly (motors limp, then a jump when it returns). The Nov 18 current measurement checks the margin. While the charger runs the arm, the laptop runs on battery.
+- **Alternatives:** a 6 V ≥ 5 A barrel supply (simplest, no trigger or converter); the original 9 V + LM2596 (marginal).
