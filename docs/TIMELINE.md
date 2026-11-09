@@ -5,9 +5,11 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 **Why v4:**
 - Finals run from about Dec 7 to Dec 20, then everyone travels.
 - From January, Ishaan and Siddharth are on co-op away from Waterloo; Vyom has a study term.
-- So all team work ends **Sun Dec 6**. V1 (web-page control, D10) has to work by **Sun Nov 22** and be demoed by **Sun Nov 29**.
+- So all team work ends **Sun Dec 6**. V1 (web-page control, D10) has to work by **Sun Nov 22** (the demo video moved to January, Vyom; D11 update Nov 5).
 - After Dec 6 the arm stays with Vyom. January = Vyom solo: write-up + V2 (gestures).
 - **Hours needed in November:** Vyom ~8–10 h/week, Ishaan and Siddharth ~6–8 h/week each.
+
+> **Update 2026-11-08:** CAD slipped while the arm size (D14) is on hold. New rule: gripper, base, web page and firmware go ahead now; links CAD starts the day after the 180° MG996Rs arrive and the stall test is done (or with option A, 11/10/7, if they're not here by Thu Nov 12). Then ~3 days CAD (+3 for a four-bar), ~3 days printing, ~3 days assembly + calibration. V1 target ~Nov 22–29; hard stop Dec 6 unchanged. The plan page has the current version.
 
 ## Dated deliverables
 
@@ -38,7 +40,7 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 | Fri Nov 20 | Vyom | Batch C reprints (≤ $5, only if needed) |
 | Sat Nov 21 | Ishaan | Calibration done; every joint moves from the laptop |
 | **Sun Nov 22** | All | **V1 works: the page drives the real arm** |
-| **Sun Nov 29** | All | **Demo video (pick-and-place), repeatability test, photos/renders, write-up notes** |
+| ~~Sun Nov 29~~ | ~~All~~ | ~~Demo video~~ → **moved to January (Vyom), D11 update Nov 5.** Nov 23 – Dec 6: fixes, reprints, hardening |
 | Nov 30 – Sun Dec 6 | All | Spare week; hard stop. The arm goes home with Vyom. |
 | ~Dec 7 – 20 | | Finals; then travel |
 | January | Vyom | README/write-up with measurements; V2 gesture control |
