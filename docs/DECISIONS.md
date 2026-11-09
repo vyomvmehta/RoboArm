@@ -78,6 +78,7 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 - **Why:** each person gets two areas (breadth for interviews) and every area has two people (no single point of failure).
 - **Trade-offs:** Vyom gives up firmware (the embedded gap on the resume), but gains real SolidWorks + DFM + printing work. Ishaan implements the protocol Vyom designed (D6).
 - Hours: all three ~5–8 h/week. Plan page: https://claude.ai/artifact/FYa2ohKX7dTyKSVxJqvHiQ (v3 has this split).
+- **Update 2026-11-08 (swap):** Siddharth had already started the base (`SolidWorks Parts/Enclosure.SLDPRT`), so **Siddharth now owns the base enclosure + lid + turntable** and **Vyom owns the gripper**. Vyom keeps the arm links + shoulder bracket, the full assembly and printing. Checks swap with it: Vyom checks Siddharth's base, Siddharth checks Vyom's gripper and links.
 
 ## D9: Repository setup (2026-10-31, Vyom)
 

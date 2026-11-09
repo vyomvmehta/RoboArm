@@ -5,3 +5,5 @@ pyserial
 matplotlib
 pyyaml
 pytest
+fastapi
+uvicorn
