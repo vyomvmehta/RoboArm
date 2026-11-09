@@ -101,6 +101,7 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 - **What changes:** CAD in one week (review Sun Nov 8, was Nov 13). The whole arm printed Nov 9–12 (was Nov 16–20). Missing parts (incl. the MG996R replacements) bought on **Amazon.ca on Mon Nov 2** for speed instead of AliExpress. Build days Nov 14–15 and Nov 22. Hours: Vyom ~8–10, others ~6–8 h/week in November.
 - **Cut order if behind:** phone support → point-and-go → a simpler gripper.
 - **Alternative considered:** keep the Jan 10 target. Rejected: only Vyom will be in Waterloo after December.
+- **Update 2026-11-05 (Vyom):** the demo video and write-up material move to **January** (Vyom, during the 1B term). The team's only goal before Dec 6 is a **working arm, as early as possible**; Nov 23 – Dec 6 becomes fix-and-harden time instead of demo time.
 
 ## D12: Torque estimate: one owner + one checker (2026-11-01, Vyom)
 
@@ -121,6 +122,15 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 - **Cost:** roughly 50–80 g of extra PLA (about $3–5) for the enclosure walls. Check against the ≤ 300 g batch B cap (D5) at the Nov 8 review; if it's over, make the bottom plate from MDF/plywood instead of printing it.
 - **Alternatives:** boards on an open plate beside the base (cheaper, easiest to probe, no heat issue, but looks unfinished); boards on the arm (rejected: adds torque at the shoulder and wires flexing across joints).
 
+## D14: Arm size 11 / 10 / 7 cm (2026-11-04, team)
+
+> **ON HOLD (2026-11-05, team):** the team wants the arm as big as possible and is weighing (A) direct drive 11/10/7, (B) direct drive with a stronger shoulder servo, ~14/12/7, (C) a four-bar elbow, 13/12/7 to 17/16/7 depending on the measured MG996R stall torque (four-bar table in PROGRESS.md, Nov 5). Parts get tested first (servo stall torque, LM2596 stall test, PD trigger). The CAD waits for this decision; every day of waiting moves V1 by about a day.
+
+- **Decision:** upper arm (shoulder → elbow axis) **110 mm**, forearm (elbow → wrist axis) **100 mm**, wrist axis → grasp point **70 mm**. Direct-drive elbow (no four-bar). `config/arm.yaml` uses these.
+- **Why:** every joint holds the worst case (arm stretched flat, 30 g block) well inside the 50 % rule: shoulder 34 % of MG996R stall (49 % even if the clones are 30 % weak), elbow 13 %, wrist 18 % of MG90S stall ([TORQUE.md](TORQUE.md)). It picks a block straight down anywhere about 90–210 mm from the base axis, and the demo layout is flexible (we fit the block and target zone inside that ring later).
+- **Alternatives:** 10 / 9 / 7 (≈ 32 % shoulder, reach ~205 mm: a bit more precise, less reach); 12 / 11 / 7 (≈ 37 %, reach ~245 mm: more sag and tip error, more plastic). Four-bar elbow (less shoulder torque, but more parts and IK changes; not needed at 34 %).
+- **Re-check** with the SolidWorks masses at the Nov 8 review.
+
 ## D15: Print clearances from the test print (2026-11-03, Vyom; provisional until the two checks below)
 
 Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA Basic (black), default profile** (0.4 mm nozzle, 0.2 mm layers). Measured with calipers by Vyom + Siddharth. **Valid for this printer, filament and profile only**: print batch B the same way.
@@ -134,7 +144,27 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 
 - **Lesson:** shrinkage depends on size. Small holes lost 0.2–0.3 mm; the 22 mm seats and the hexagons lost only about 0.03–0.1 mm. One global "add 0.2 mm" rule would have been wrong for both. (Before printing, Claude predicted 22.2 would be the press fit; it was 22.0.)
 - **Still to check:** (1) push a real M3 screw through the 3.4 hole (borrowed from RidgidWare); if it slides, 3.45 has a little margin; (2) measure the nut's thickness to set the pocket depth.
-- Motor pockets and the motor-arm recess are still untested (frames pending the caliper numbers).
+- **Motor pockets (frames, tested 2026-11-04 by feel, no calipers):** pocket = body + clearance, 5 mm plate, motor pushed in bottom-first until the tabs rest on the plate.
+
+  | Motor (body) | +0.10 pocket | Use |
+  | --- | --- | --- |
+  | MG996R (19.8 × 40.5) | firm fit, no wiggle, stays in upside down | **Draw 19.9 × 40.6** (+0.10). Also confirms the 40.5 length (the sheet's 39.3 is another dimension). |
+  | MG90S (11.9 × 22.8) | goes in, stays in upside down, some wiggle, pushes out easily | **Draw 11.9 × 22.8** (+0.00), untested; the tab screws hold it anyway |
+
+  - **The cables jam.** The wires leave the bottom of one end face and have nowhere to go in a closed pocket. Every motor pocket gets a **cable slot** in the wall at the cable end, running the full depth of the pocket: about 6 mm wide for the MG996R and 4 mm for the MG90S (check with a ruler across the cable exit).
+- **Servo mounting dimensions (Nov 8, team; match the published drawings; spot-check tab span + hole spacing on a real servo):**
+
+  | | MG996R | MG90S |
+  | --- | --- | --- |
+  | Tab span, tip to tip | 54.0 | 32.2 |
+  | Body bottom → underside of tabs | 26.8 | 16.0 |
+  | Tab hole | 4.4 (no grommet/eyelet) | 2.0 |
+  | Hole spacing along × across (centre-centre) | 49.0 × 10.0 (2 holes per tab) | 27.5 (1 hole per tab) |
+  | Shaft centre → nearest body end | 10.5 | 5.6 |
+
+  - MG996R: skip the rubber grommets and brass eyelets (rubber lets the motor wobble). M3 screws through the 4.4 tab holes into captive M3 nuts; printed holes 3.45. The pocket locates the motor; the screws only clamp it.
+  - MG90S: M2 screws. Printed clearance hole about 2.4 mm (small holes print 0.2–0.3 mm undersize, D15), or 1.7–1.8 mm if using self-tapping M2 screws into the plastic.
+- The motor-arm recess is still untested.
 
 ## D16: Servo power from the Apple 96 W charger at 15 V; try the LM2596 first (2026-11-03, Vyom + Siddharth). Updates D4.
 
@@ -144,3 +174,17 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 - **Fuse:** 5 A slow-blow, protecting the wiring against shorts (the LM2596 limits itself). The 8 A fuses we own are being returned.
 - **Risk:** if the arm pulls more than the charger agreed to, a PD charger cuts power briefly (motors limp, then a jump when it returns). While the charger runs the arm, the laptop runs on battery.
 - **Alternatives:** buy the XL4015 now (more margin, about $6, but delivery lead time); a 6 V ≥ 5 A barrel supply (simplest); the original 9 V trigger (marginal).
+
+**Update 2026-11-04 (team, while ordering).** AliExpress shipping was too expensive, so the order moved to Amazon.ca (Prime):
+
+- **PD trigger:** a DIP-switch USB-C PD trigger board (5/9/12/15/20 V, USB-C socket input) from Amazon.ca instead of the ZY12PDN, set to **15 V**. **Arrives by Nov 6.** Check 15 V with a multimeter before connecting anything; if it reads 9 V or 5 V, try another USB-C cable.
+- **Fuse: use the 8 A fuses we already own** (3.6 × 10 mm, wire leads), soldered straight onto the power board between the converter and the kill switch. No holder, no 5 A fuses, no return. Why it's acceptable: the charger supplies at most 3 A at 15 V and the LM2596 limits itself at about 3 A, so even a 5 A fuse would almost never blow. The fuse is the last line of defence against a dead short in the wiring after the converter, and 8 A still blows before 18 AWG wire overheats. Revisit if we switch to a supply that can deliver 5 A or more (or set the XL4015's current-limit knob to about 4.5 A).
+- **XL4015: not bought.** On Amazon.ca it arrived Nov 14–20 for about $15 with shipping: too slow to help and too expensive as an idle spare. Instead:
+  1. **Test the LM2596 this week** on a bench supply (15 V, 2 A limit): set 6.0 V first, then hold one MG996R stalled 1–2 s. Pass = stays above about 5.5 V, warm but touchable, never cuts out.
+  2. **If it sags:** run the motors gently (the motion limiter ramps speed; the web page can move one joint at a time). Normal motion draws about 0.2–0.5 A per motor holding and 0.5–1 A moving; peaks come from several MG996Rs starting together.
+  3. **If it dies:** set the PD trigger to **5 V** and power the motor rail directly (no converter). Still capped at 3 A; the MG996R loses torque (about 9.4 instead of 11 kg·cm stall), so the shoulder runs at about 34 % of stall instead of 29 %, still under the 50 % rule.
+  4. **For the demo:** a borrowed bench supply (6 V, 5 A limit) removes any doubt.
+  5. Ask RidgidWare whether they sell a buck converter module; buy one only if it's a few dollars.
+- **Heatsink** for the LM2596 from RidgidWare (cheapest way to raise its sustained current).
+
+**Test result 2026-11-08 (no meter yet):** trigger at 9 V, LM2596 at 6.0 V; one MG996R (360° version, used as a load) stalled by hand for 1–2 s through the PCA9685: no cut-out, LM2596 not warm. Provisional **pass**; still to read the output voltage during a stall with a multimeter.

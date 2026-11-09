@@ -32,3 +32,15 @@ About the elbow axis: forearm 20 g × 5 cm + wrist motor 13.4 g × 10 cm + gripp
 **Recommendation for the arm-size call (Mon Nov 2):** keep ~11 + 10 + 7 cm. Torque isn't the limit; check that ~28 cm reaches the demo's pick and place spots.
 
 **Re-check:** with measured motor masses (if available) and with SolidWorks mass properties at the Nov 8 design review.
+
+## Wrist check (MG90S, same worst case), added 2026-11-04
+
+About the wrist axis: gripper parts + gripper motor 33.4 g × 3.5 cm + block 30 g × 7 cm = 0.117 + 0.210 = **0.33 kg·cm**, i.e. **18 % of MG90S stall** (1.8 kg·cm at 4.8 V). No concern. The base (J0) carries no weight (608 bearings), only friction and the arm's inertia when turning.
+
+## Clone servos (margin check)
+
+Cheap MG996R clones often reach only 60–70 % of the rated 9.4 kg·cm. Worst plausible case: 3.24 / (0.7 × 9.4) = **49 %**, still at or under the 50 % rule. At 6 V (rated ~11 kg·cm) the margin is better. Confirm with the Nov 8 SolidWorks masses.
+
+## What it means for current (rough; measure on Nov 18)
+
+A servo's current rises roughly with the torque it holds. With an MG996R stall current of about 2.5 A: shoulder at ~34 % ≈ 0.9 A, elbow ≈ 0.35 A, the two MG90S and the base ≈ 0.1–0.2 A each. **Holding the stretched-out arm: about 1.5–2 A in total.** Moving adds short peaks. Against the chain: charger 45 W at 15 V (≈ 3 A at 15 V, more than 6 A worth at 6 V) has lots of margin; the **LM2596 (about 2 A continuous) is the part closest to its limit**, which is why it gets a heatsink and the stall test (D16), and why the motion limiter keeps speeds gentle.
