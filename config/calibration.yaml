@@ -1,0 +1,22 @@
+# Joint angle (degrees) -> servo pulse (microseconds), per joint.  DRAFT 2026-11-08 (Vyom).
+# OWNER: Ishaan (D8). Every number here is a placeholder until he measures the real arm.
+# This file is part of the contract between the laptop and the firmware: don't change it
+# without telling the other side.
+#
+#   direction:   +1 if a LONGER pulse moves the joint toward MORE POSITIVE angles, else -1
+#   us_per_deg:  pulse change per degree of joint motion (datasheet ~5.6; measure it)
+#   min_us/max_us: never send a pulse outside these (the servo's mechanical ends, measured)
+#
+# The 1500 us point is the window centre in config/arm.yaml (where the horn was put on).
+
+center_us: 1500
+
+joints:
+  j0_base:     {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
+  j1_shoulder: {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
+  j2_elbow:    {direction: -1, us_per_deg: 5.6, min_us: 1000, max_us: 2000}
+  j3_wrist:    {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
+
+gripper:  # opening in mm -> pulse, straight line between two measured points
+  closed_us: 1200
+  open_us: 1800

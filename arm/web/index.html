@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoboArm</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:16px;background:#f5f6f4;color:#1d211f}
+  .row{display:grid;grid-template-columns:120px 1fr 64px;gap:10px;align-items:center;margin:14px 0}
+  input[type=range]{width:100%;height:32px}  /* tall enough for a thumb on a phone */
+  .val{font-family:monospace;text-align:right}
+  #status{font-family:monospace;font-size:.9rem;padding:6px 10px;border-radius:6px;background:#fbeae3}
+  #status.ok{background:#e5f3ea}
+  #log{font-family:monospace;font-size:.8rem;color:#5d6560;white-space:pre-wrap}
+</style></head>
+<body>
+<h1>RoboArm</h1>
+<div id="status">connecting...</div>
+<div id="sliders"></div>
+<div id="log"></div>
+
+<script>
+// ---------- connection ----------
+const sock = new WebSocket(`ws://${location.host}/ws`);
+const statusEl = document.getElementById("status");
+sock.onopen  = () => { statusEl.textContent = "connected"; statusEl.className = "ok"; };
+sock.onclose = () => { statusEl.textContent = "disconnected: reload the page"; statusEl.className = ""; };
+sock.onmessage = (e) => {
+  const m = JSON.parse(e.data), log = document.getElementById("log");
+  if (m.type === "error") { log.textContent = "NOT SENT: " + m.msg; log.style.color = "#c0392b"; }
+  else { log.textContent = "sent: " + m.line + "\npulses (us): " + m.us.join(", "); log.style.color = ""; }
+};
+
+// ---------- THROTTLE (the part worth understanding) ----------
+// Slider events fire on every pixel (100+ per second). The arm can only use ~50 per second.
+// So: slider events only UPDATE `latest` and set `dirty`. A timer SENDS at most 30 times
+// per second, and only the newest values. Old positions are never queued; they are overwritten.
+const SEND_HZ = 30;
+let latest = [];     // current value of every slider
+let dirty = false;   // has anything changed since the last send?
+
+setInterval(() => {
+  if (!dirty || sock.readyState !== WebSocket.OPEN) return;
+  // bufferedAmount > 0 means the last message hasn't even left the laptop yet: skip this tick
+  // rather than pile up. Same "latest wins" idea, one level down.
+  if (sock.bufferedAmount > 0) return;
+  sock.send(JSON.stringify({type: "joints", deg: latest}));
+  dirty = false;
+}, 1000 / SEND_HZ);
+
+// ---------- build the sliders from the server's /config ----------
+fetch("/config").then(r => r.json()).then(({sliders}) => {
+  const box = document.getElementById("sliders");
+  sliders.forEach((s, i) => {
+    latest[i] = s.start;
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `<label>${s.name}</label>
+      <input type="range" min="${s.min}" max="${s.max}" step="1" value="${s.start}">
+      <span class="val">${s.start}</span>`;
+    const input = row.querySelector("input"), val = row.querySelector(".val");
+    input.addEventListener("input", () => {   // fires continuously while dragging
+      latest[i] = Number(input.value);
+      val.textContent = input.value;
+      dirty = true;                            // note: NO send here
+    });
+    box.appendChild(row);
+  });
+});
+</script>
+</body></html>
