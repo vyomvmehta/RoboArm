@@ -1,0 +1,9 @@
+# Laptop <-> Nano link settings (docs/PROTOCOL.md). DRAFT 2026-11-10 (Vyom + Claude).
+# Override the port without editing this file:  py -m arm.web.server --port COM14
+# Run with no hardware at all (simulated Nano):  py -m arm.web.server --fake
+
+port: COM14            # Device Manager -> Ports (COM & LPT). Changes if you use a different USB socket.
+baud: 115200           # PROTOCOL.md section 1
+banner_timeout_s: 3.0  # opening the port resets the Nano; wait this long for its R banner (section 7)
+heartbeat_hz: 30       # C frames per second while ARMED. Must beat the firmware's 300 ms watchdog
+                       # with margin: 30 Hz = one frame every 33 ms, so ~9 frames can be lost first.
