@@ -128,7 +128,10 @@ class SerialLink(Link):
         buf = b""
         while self.connected:
             try:
-                chunk = self._port.read(64)       # returns after 0.1 s even if nothing came
+                # Read whatever has ARRIVED (at least 1 byte, waiting up to 0.1 s for it).
+                # read(64) would wait until 64 bytes piled up (several K replies) on Windows,
+                # which delayed each reply and inflated the measured round trip (Nov 10 bench).
+                chunk = self._port.read(self._port.in_waiting or 1)
             except Exception:                     # cable pulled, port gone
                 self.connected = False
                 self.state = "DISCONNECTED"
