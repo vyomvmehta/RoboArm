@@ -5,7 +5,7 @@
 #
 #   direction:   +1 if a LONGER pulse moves the joint toward MORE POSITIVE angles, else -1
 #   us_per_deg:  pulse change per degree of joint motion (MEASURE IT. MG90S bench, Nov 10:
-#                ~12 us/deg, i.e. ~150 deg over 600-2400 us, NOT the datasheet's 180 deg)
+#                180 deg between 650 and 2600 us = ~11 us/deg, NOT the 5.6 that 1000 us/180 deg assumes)
 #   min_us/max_us: never send a pulse outside these (the servo's mechanical ends, measured)
 #
 # The 1500 us point is the window centre in config/arm.yaml (where the horn was put on).
@@ -16,7 +16,7 @@ joints:
   j0_base:     {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
   j1_shoulder: {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
   j2_elbow:    {direction: -1, us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j3_wrist:    {direction: 1,  us_per_deg: 12,  min_us: 1000, max_us: 2000}  # MG90S bench Nov 10: ~150 deg over 600-2400 us (eyeballed); widen min/max with the firmware limits
+  j3_wrist:    {direction: 1,  us_per_deg: 11,  min_us: 1000, max_us: 2000}  # MG90S bench Nov 10: 180 deg = 650-2600 us (10.8 us/deg), end stop ~500, >2600; widen min/max to ~550-2550 WITH the firmware limits
 
 gripper:  # opening in mm -> pulse, straight line between two measured points
   closed_us: 1200
