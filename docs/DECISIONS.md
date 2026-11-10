@@ -125,6 +125,8 @@ Waiting on Ishaan. Options: Fusion assembly + one SolidWorks part exported as ST
 
 ## D14: Arm size 11 / 10 / 7 cm (2026-11-04, team)
 
+> **DECIDED (2026-11-09, all three): option C, four-bar elbow, designed to 13 / 12 / 7 cm.** Both shoulder-axis MG996Rs sit on the turntable (coaxial); the elbow motor drives the forearm through a crank and rod, so the forearm's angle is set absolutely. 13/12 keeps the shoulder at ~35% of rated stall and ≤ 50% even if the clones are only 70% as strong. Upsize to 15/14 only if the water-bag stall test (MG996Rs arrive ~Nov 17) shows the motors are close to rated. Cost: ~3 more days of CAD, bearings at the elbow, dead positions at straight / fully folded, and the elbow servo maps to the forearm's absolute angle (θ1 + θ2) in calibration. Below is the original record.
+>
 > **ON HOLD (2026-11-05, team):** the team wants the arm as big as possible and is weighing (A) direct drive 11/10/7, (B) direct drive with a stronger shoulder servo, ~14/12/7, (C) a four-bar elbow, 13/12/7 to 17/16/7 depending on the measured MG996R stall torque (four-bar table in PROGRESS.md, Nov 5). Parts get tested first (servo stall torque, LM2596 stall test, PD trigger). The CAD waits for this decision; every day of waiting moves V1 by about a day.
 
 - **Decision:** upper arm (shoulder → elbow axis) **110 mm**, forearm (elbow → wrist axis) **100 mm**, wrist axis → grasp point **70 mm**. Direct-drive elbow (no four-bar). `config/arm.yaml` uses these.

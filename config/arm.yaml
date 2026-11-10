@@ -8,9 +8,9 @@
 #   theta3 = wrist bend relative to the forearm, pitch = theta1 + theta2 + theta3 (-90 = pointing down).
 # Joint angle -> servo pulse lives in config/calibration.yaml (Ishaan), not here.
 
-links:  # D14 ON HOLD (Nov 5): 11 / 10 / 7 cm until the servo torque test; may grow (four-bar or stronger servo)
-  l1: 110               # shoulder axis -> elbow axis
-  l2: 100               # elbow axis -> wrist axis
+links:  # D14 (Nov 9): four-bar, 13 / 12 / 7 cm; may grow to 15 / 14 after the MG996R stall test (~Nov 17)
+  l1: 130               # shoulder axis -> elbow axis
+  l2: 120               # elbow axis -> wrist axis
   l3: 70                # wrist axis -> grasp point between the jaws
   shoulder_height: 90   # shoulder axis above the table. Estimate: base enclosure + turntable + shoulder bracket
   shoulder_offset: 15   # shoulder axis forward of the base axis. Estimate
@@ -52,8 +52,8 @@ poses:
   park: {theta0: 0, theta1: 90, theta2: -130, theta3: -40}
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
-  r_min: 90             # closer than this, the gripper meets the base (base radius ~60 mm, estimate)
-  r_max: 210            # IK reaches ~224 when picking at z = 15, but a nearly straight arm is sloppy
+  r_min: 100            # closer: the elbow folds past its -145 limit (IK reaches ~95 at z = 15)
+  r_max: 240            # IK reaches ~260 at z = 15 (13/12/7), but near-straight = sloppy + four-bar dead point
   z_min: 5              # never drive the jaws into the table
   z_max: 250
 
