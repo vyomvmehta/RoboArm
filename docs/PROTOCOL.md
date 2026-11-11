@@ -99,6 +99,7 @@ A reset mid-run (cable pulled) leaves the arm limp, so the park-pose requirement
 
 ## Still to decide
 
+- **HOLD timeout? (found on the bench, 2026-11-10).** If the laptop server dies without a clean exit (crash, force-kill, laptop sleeps), no `D` is sent: the watchdog puts the arm in HOLD, and HOLD keeps the last pulses **forever**, with every servo powered and straining. Option: after N seconds of HOLD (10–30 s?), go DISARMED. Trade-off: going limp drops the arm unless it is near the park pose. Decide together (Ishaan owns the firmware).
 - Park and home pose angles (after the CAD exists).
 - Per-joint speed caps (°/s) for the motion limiter. **Implemented by Ishaan** (firmware owner since D8); values tuned during calibration (Nov 21).
 - Whether the laptop should be able to change speed caps at run time (probably not in v1).
