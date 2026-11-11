@@ -51,7 +51,7 @@ RACK_BACK = 6.0                  # rack body thickness behind the tooth roots
 
 # Heights (Z). ESTIMATES until the MG90S horn is measured: shaft tip ~12.5 above the
 # tab underside (28.5 - 16.0), horn hub ~1.5 on top of that.
-Z_P0 = 14.0                      # pinion bottom
+Z_P0 = 14.0                      # pinion bottom = top of the horn arm (MEASURED 14.0, Nov 10)
 PINION_W = 6.0                   # pinion face width
 RACK_W = 7.0                     # rack face width (0.5 proud of the pinion top and bottom)
 Z_R0 = Z_P0 - 0.5
@@ -61,7 +61,7 @@ Z_R1 = Z_R0 + RACK_W
 SERVO_W, SERVO_L, SHAFT_FROM_END = 11.9, 22.8, 5.6
 TAB_PITCH = 27.5
 M2_PILOT = 1.8                   # self-tapping M2 into plastic (D15)
-M3_CLEAR, M3_NUT_AF, M3_NUT_DEPTH = 3.45, 5.6, 2.6   # D15
+M3_CLEAR, M3_NUT_AF, M3_NUT_DEPTH = 3.45, 5.6, 4.2   # D15: depth = nut 3.87 + 0.3 (2.6 was the TEST depth; nuts stuck up)
 
 DECK_T = 2.5
 DECK_X = (-35.0, 35.0)
@@ -69,9 +69,13 @@ RAIL_W = 2.6                     # thin rail; a round boss carries the hold-down
 BOSS_D = 5.5
 SCREW_X = 8.0                    # rack hold-down screws at (-8, +y) and (+8, -y)
 
-HORN_HUB_D, HORN_HUB_DEPTH = 7.6, 2.5   # recess for the horn hub (hub measured 7.07)
-HORN_SCREW_CLEAR, HORN_SCREW_HEAD = 2.4, 4.5
-HORN_PILOT_R = 6.0               # PLACEHOLDER: horn arm screw radius (not measured yet)
+# MG90S horn, measured by Vyom 2026-11-10: hub OD 7.0 (sticks up 3.5 above the arm), arm 2.0
+# thick at the tips, holes Ø2.0 at r = 6 and r = 17. The arms get TRIMMED to ~8.5 mm radius
+# (just past the first holes) so they fit under the pinion and clear the racks and rails.
+HORN_HUB_D, HORN_HUB_DEPTH = 7.6, 3.8   # recess: hub Ø7.0 + 0.6, 3.5 tall + 0.3
+HORN_ACCESS_D = 5.5              # screwdriver access to the horn's own centre screw (head Ø ~4.5)
+HORN_PILOT_R = 6.0               # first horn holes (measured)
+HORN_PILOT_D = 1.6               # small self-tapping screws up through the horn into the pinion
 
 # Derived rack geometry (rack A, on the +Y side; jaw B is the same part turned 180 deg).
 Y_PITCH = R + CENTRE_GAP
@@ -217,10 +221,10 @@ def rack_outline(x_e):
 def build_pinion(sw):
     p = Part(sw, "Gripper Pinion")
     p.boss(lambda s: s.poly(pinion_outline()), Z_P0, PINION_W)
-    p.cut(lambda s: s.circle(0, 0, HORN_SCREW_CLEAR))
-    p.cut(lambda s: s.circle(0, 0, HORN_SCREW_HEAD), Z_P0 + PINION_W - 2.0, 2.0)
+    p.cut(lambda s: s.circle(0, 0, HORN_ACCESS_D))
     p.cut(lambda s: s.circle(0, 0, HORN_HUB_D), Z_P0, HORN_HUB_DEPTH)
-    p.cut(lambda s: (s.circle(HORN_PILOT_R, 0, 1.2), s.circle(-HORN_PILOT_R, 0, 1.2)))
+    p.cut(lambda s: (s.circle(HORN_PILOT_R, 0, HORN_PILOT_D),
+                     s.circle(-HORN_PILOT_R, 0, HORN_PILOT_D)))
     return p.finish()
 
 
@@ -252,7 +256,8 @@ def build_body(sw):
     b.boss(lambda s: s.rect(-25, -Y_SCREW - RAIL_W / 2, 35, -Y_SCREW + RAIL_W / 2), 0.0, Z_R0)
     b.boss(lambda s: (s.circle(-SCREW_X, Y_SCREW, BOSS_D), s.circle(SCREW_X, -Y_SCREW, BOSS_D)),
            0.0, Z_R0)
-    b.boss(lambda s: (s.circle(-31, 6, 7.5), s.circle(-31, -6, 7.5)), -19.0, 19.0 - DECK_T)
+    # Ø10 posts: the 5.6 hex nut is 6.5 across corners, so Ø7.5 left only 0.5 mm of wall.
+    b.boss(lambda s: (s.circle(-31, 6, 10.0), s.circle(-31, -6, 10.0)), -19.0, 19.0 - DECK_T)
     # Servo opening and tab screw pilots.
     b.cut(lambda s: s.rect(sx0, -SERVO_W / 2, sx1, SERVO_W / 2))
     b.cut(lambda s: (s.circle(sc - TAB_PITCH / 2, 0, M2_PILOT),
@@ -313,7 +318,9 @@ def check_interference(sw_tlb, doc):
 def main():
     sw = w.Dispatch("SldWorks.Application")
     sw.Visible = True
-    sw.CloseAllDocuments(True)
+    # Close only our own gripper files, never other open work (e.g. coursework in SolidWorks).
+    for title in ("Gripper", "Gripper Body", "Gripper Pinion", "Gripper Jaw"):
+        sw.CloseDoc(title)
     results = {}
     for build in (build_pinion, build_jaw, build_body):
         path, vol = build(sw)

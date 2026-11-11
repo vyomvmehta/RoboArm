@@ -201,3 +201,27 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 - **Alternatives:** single moving jaw (block lands off-centre), parallelogram linkage (more pivots, opening not linear in angle), worm drive (slow, heavy).
 - **Placeholders (update before printing):** pinion-to-horn screw holes (horn hole radius not measured yet; placeholder r = 6 mm, Ø1.2 pilots), pinion height Z_P0 = 14 mm (depends on the real horn thickness; check with the servo + horn in hand), wrist mount (2× M3 posts until the wrist bracket exists), TPU finger pads not modelled.
 - **Mass:** 28.7 g if printed solid (body 14.5, pinion 3.0, jaws 2× 5.6). The torque check budgeted ~20 g printed; expect ~22–25 g printed, which adds roughly 0.1–0.2 kg·cm at the shoulder (~2% of stall). Acceptable; trim the body if the four-bar check gets tight.
+
+### D15 update (2026-11-10): horns measured (Vyom, ruler, mm)
+| Horn | Hub | Holes (centre to hole centre) | Hole size | Thickness |
+| --- | --- | --- | --- | --- |
+| MG90S (plastic, double arm) | OD 7.0, sticks up 3.5 above the arm; screw hole Ø3.0, head recess Ø5.0 | 6.0 (first), 17.0 (outermost) | Ø2.0 | 5.0 at the hub, 2.0 at the tips |
+| MG996R 25T aluminium | — | 8, 20, 29 | Ø3.0 (M3) | not measured yet |
+
+MG90S height, tab underside to the top of the fitted horn arm: **14.0** (sets the pinion height Z_P0). Board heights: Nano 19, PCA9685 15, LM2596 15 + heatsink, PD trigger 14; base interior ≥ 30.
+
+Gripper: the MG90S horn arms are trimmed to ~8.5 mm radius so they fit under the pinion and clear the racks/rails; the pinion screws to the horn through the r = 6 holes (Ø1.6 pilots) and has a Ø7.6 × 3.8 recess for the hub and a Ø5.5 hole for a screwdriver to reach the horn's centre screw.
+
+### D17 update (2026-11-10): mitten look, fixed fingers (team)
+Jaws reshaped as a thumb and four joined fingers ("mitten"), fingertips curled slightly inward, so the gripper looks like a pinching hand. The mechanism is unchanged: the grip faces stay flat and parallel, so the opening stays linear in servo angle. Rejected for now: fingers that tilt outward when open and inward when closing (pivot + cam slot): grip faces parallel at only one opening, curved calibration, +2 pivots of slop, ~1 day of CAD on a part due to print ~Nov 18. Candidate for January with the swappable one-servo hand. Extra cost: none beyond a few grams of PLA.
+
+### D15 update (2026-11-10): M3 nut pocket depth = 4.2
+Rule from the test print: nut thickness + 0.3. The nut measured 3.87 (Nov 4), so **draw 4.2 deep**. (2.6 was only the test depth: the nuts stuck up.) Leave ≥ 2.5 mm of plastic behind the nut, because the screw pulls the nut into that floor.
+
+## D18: Shoulder bracket for the four-bar (2026-11-10, Vyom built it in SolidWorks; Siddharth checks)
+
+- **What:** `SolidWorks Parts/Shoulder Bracket.SLDPRT`. 80 × 60 × 5 base plate (mid-plane, so its top is at +2.5) with 4× M3 (Ø3.45) on a **60 × 40** pattern = the interface to Siddharth's turntable/lid. Two 50 × 66 towers, **7 mm** thick, inner faces **39 mm** apart. MG996R pockets 19.9 × 40.6 cut through both towers in one feature; shaft axis **47.5 above the origin = 45 above the plate top = 50 above the plate's underside**; 4× Ø3.45 tab holes per servo on 49 × 10; M3 nut pockets 5.6 AF × 4.2 deep on the outer faces. Mass 71.4 g (PLA, solid).
+- **Why:** both MG996Rs coaxial with their shafts pointing inward, so the upper arm and the four-bar crank sit between the towers. Gap 39 = horn 13 + upper arm 6 + clearance 2 + crank 5 + horn 13 (tab underside → top of the fitted aluminium horn measured 13). Axis 45 above the plate because the aluminium horn reaches ~33 mm from the shaft. Towers 66 tall so the top tab holes keep 4.6 mm of plastic above them; 7 thick so the 4.2 nut pockets keep a 2.8 mm floor.
+- **Checked:** volume matches a hand calculation to 0.1 mm³ (57,580 mm³), so every feature is where intended. Cable slot not needed: through-pockets, and the MG996R cable exits near the body bottom, ~20 mm outside the tower (confirm with a real servo).
+- **Still to add:** a cable hole matching Siddharth's turntable layout. Aluminium horn thickness (4 / 6 mm, units to confirm) affects only the upper arm and crank.
+- arm.yaml: `shoulder_offset` → 0 (the bracket is centred on the turntable axis); `shoulder_height` = base + turntable + 50, still an estimate.

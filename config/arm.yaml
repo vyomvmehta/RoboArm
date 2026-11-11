@@ -12,8 +12,8 @@ links:  # D14 (Nov 9): four-bar, 13 / 12 / 7 cm; may grow to 15 / 14 after the M
   l1: 130               # shoulder axis -> elbow axis
   l2: 120               # elbow axis -> wrist axis
   l3: 70                # wrist axis -> grasp point between the jaws
-  shoulder_height: 90   # shoulder axis above the table. Estimate: base enclosure + turntable + shoulder bracket
-  shoulder_offset: 15   # shoulder axis forward of the base axis. Estimate
+  shoulder_height: 90   # ESTIMATE until Siddharth's base exists: base height + turntable + 50 (shoulder bracket: axis 50.0 above its underside, Nov 10)
+  shoulder_offset: 0    # shoulder bracket is centred on the turntable axis (Nov 10)
 
 # Each servo turns 180 degrees. `window` is where that 180 degrees lands in joint angles; it is
 # fixed when the horn is put on (see the note at the bottom). `limits` is the part of the window
