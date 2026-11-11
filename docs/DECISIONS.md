@@ -206,7 +206,7 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 | Horn | Hub | Holes (centre to hole centre) | Hole size | Thickness |
 | --- | --- | --- | --- | --- |
 | MG90S (plastic, double arm) | OD 7.0, sticks up 3.5 above the arm; screw hole Ø3.0, head recess Ø5.0 | 6.0 (first), 17.0 (outermost) | Ø2.0 | 5.0 at the hub, 2.0 at the tips |
-| MG996R 25T aluminium | — | 8, 20, 29 | Ø3.0 (M3) | not measured yet |
+| MG996R 25T aluminium | — | 8, 20, 29 | Ø3.0 (M3) | 6 at the hub, 4 at the arms; tab underside → top of fitted horn 13 |
 
 MG90S height, tab underside to the top of the fitted horn arm: **14.0** (sets the pinion height Z_P0). Board heights: Nano 19, PCA9685 15, LM2596 15 + heatsink, PD trigger 14; base interior ≥ 30.
 
@@ -223,5 +223,5 @@ Rule from the test print: nut thickness + 0.3. The nut measured 3.87 (Nov 4), so
 - **What:** `SolidWorks Parts/Shoulder Bracket.SLDPRT`. 80 × 60 × 5 base plate (mid-plane, so its top is at +2.5) with 4× M3 (Ø3.45) on a **60 × 40** pattern = the interface to Siddharth's turntable/lid. Two 50 × 66 towers, **7 mm** thick, inner faces **39 mm** apart. MG996R pockets 19.9 × 40.6 cut through both towers in one feature; shaft axis **47.5 above the origin = 45 above the plate top = 50 above the plate's underside**; 4× Ø3.45 tab holes per servo on 49 × 10; M3 nut pockets 5.6 AF × 4.2 deep on the outer faces. Mass 71.4 g (PLA, solid).
 - **Why:** both MG996Rs coaxial with their shafts pointing inward, so the upper arm and the four-bar crank sit between the towers. Gap 39 = horn 13 + upper arm 6 + clearance 2 + crank 5 + horn 13 (tab underside → top of the fitted aluminium horn measured 13). Axis 45 above the plate because the aluminium horn reaches ~33 mm from the shaft. Towers 66 tall so the top tab holes keep 4.6 mm of plastic above them; 7 thick so the 4.2 nut pockets keep a 2.8 mm floor.
 - **Checked:** volume matches a hand calculation to 0.1 mm³ (57,580 mm³), so every feature is where intended. Cable slot not needed: through-pockets, and the MG996R cable exits near the body bottom, ~20 mm outside the tower (confirm with a real servo).
-- **Still to add:** a cable hole matching Siddharth's turntable layout. Aluminium horn thickness (4 / 6 mm, units to confirm) affects only the upper arm and crank.
+- **Still to add:** a cable hole matching Siddharth's turntable layout. Aluminium horn: 6 mm at the hub, 4 mm at the arms (confirmed Nov 10).
 - arm.yaml: `shoulder_offset` → 0 (the bracket is centred on the turntable axis); `shoulder_height` = base + turntable + 50, still an estimate.
