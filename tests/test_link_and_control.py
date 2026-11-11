@@ -132,3 +132,44 @@ def test_only_one_browser_can_drive_the_arm():
         with client.websocket_connect("/ws"):
             with client.websocket_connect("/ws") as second:
                 assert json.loads(second.receive_text())["type"] == "busy"
+
+
+# ------------------------------------------------------------------ FakeNano == firmware v0
+# Each row: state to put the fake in, frame sent, reply the REAL firmware gives (read off
+# the handle_*() functions in firmware/arm_controller/arm_controller.ino). PR #6 review found
+# the first two rows wrong in the old FakeNano, which would have let a laptop bug pass tests.
+FIRMWARE_CASES = [
+    ("ARMED",    "H", [],                          "K", "ARMED"),   # H is a valid type
+    ("ARMED",    "C", [1500] * 4,                  "E", "2"),       # wrong field count
+    ("DISARMED", "C", [1500] * 4,                  "E", "2"),       # field count checked first
+    ("DISARMED", "C", [1500] * 5,                  "E", "4"),       # C while not armed
+    ("ARMED",    "C", [1500] * 4 + ["15x0"],       "E", "2"),       # non-number
+    ("ARMED",    "C", [1500] * 4 + [2600],         "E", "3"),       # outside the hard limit
+    ("DISARMED", "H", [],                          "E", "4"),       # H needs ARMED
+    ("DISARMED", "A", [1],                         "E", "2"),       # A takes no fields
+    ("ARMED",    "A", [],                          "E", "7"),       # A only from DISARMED
+    ("ARMED",    "P", [],                          "K", "ARMED"),   # ping
+    ("ARMED",    "X", [],                          "E", "5"),       # unknown type
+    ("ARMED",    "D", [],                          "K", "DISARMED"),
+]
+
+
+@pytest.mark.parametrize("state,kind,fields,reply_kind,reply_field", FIRMWARE_CASES)
+def test_fake_nano_answers_like_the_firmware(state, kind, fields, reply_kind, reply_field):
+    from arm.comms.protocol import decode, encode
+    link = FakeNano()
+    if state == "ARMED":
+        link.send("A")
+    link._write(encode(kind, 7, *fields))
+    kind_got, seq_got, fields_got = decode(link.log[-1][3:])
+    assert (kind_got, seq_got, fields_got[0]) == (reply_kind, 7, reply_field)
+
+
+def test_fake_nano_limits_are_read_from_the_firmware_source():
+    import re
+    from arm.comms.link import FIRMWARE, firmware_limits
+    src = FIRMWARE.read_text(encoding="utf-8")
+    lo, hi = firmware_limits()
+    assert len(lo) == len(hi) == 5
+    assert str(lo[0]) in re.search(r"PULSE_MIN.*", src).group(0)
+    assert FakeNano().pulse_min == lo

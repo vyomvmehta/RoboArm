@@ -36,7 +36,10 @@ class Controller:
         """Park pose as [j0..j3 degrees, gripper mm], from config/arm.yaml."""
         park = self.cal.arm.park
         g = self.cal.arm.raw["gripper"]
-        return [round(math.degrees(v), 3) for v in vars(park).values()] + [g["open_mm"]]
+        # Named fields, not vars(park).values(): reordering JointAngles must not silently
+        # scramble the park pose (PR #6 review).
+        joints = (park.theta0, park.theta1, park.theta2, park.theta3)
+        return [round(math.degrees(v), 3) for v in joints] + [g["open_mm"]]
 
     # ------------------------------------------------------------------ arming
     async def arm(self) -> str | None:

@@ -14,9 +14,11 @@ wait for lines from the Nano and record what they say; everything else just read
 """
 from __future__ import annotations
 
+import re
 import threading
 import time
 from collections import deque
+from pathlib import Path
 
 from arm.comms.protocol import decode, encode
 
@@ -157,14 +159,36 @@ class SerialLink(Link):
             pass
 
 
+FIRMWARE = Path(__file__).resolve().parents[2] / "firmware" / "arm_controller" / "arm_controller.ino"
+
+
+def firmware_limits(path: Path = FIRMWARE) -> tuple[list[int], list[int]]:
+    """PULSE_MIN / PULSE_MAX read straight from the firmware source, so FakeNano can never
+    drift from the real hard limits (they are about to be widened, PR #6 review)."""
+    src = path.read_text(encoding="utf-8")
+
+    def array(name):
+        m = re.search(name + r"\s*\[\s*NJOINTS\s*\]\s*=\s*\{([^}]*)\}", src)
+        if not m:
+            raise LinkError(f"{name} not found in {path}")
+        return [int(v) for v in m.group(1).split(",")]
+
+    return array("PULSE_MIN"), array("PULSE_MAX")
+
+
 class FakeNano(Link):
-    """A pretend Nano that follows firmware v0's rules, so the whole laptop side can be
-    tested with no hardware. It does NOT move anything; it only answers like the firmware."""
+    """A pretend Nano that answers exactly like firmware/arm_controller (v0), handler by
+    handler, so the whole laptop side can be tested with no hardware. It moves nothing.
+
+    Each branch below mirrors one handle_*() in the .ino, including the ORDER of its checks
+    (e.g. a C frame's field count is checked before the armed state), so the same frame
+    gets the same reply here and on the real Nano."""
 
     def __init__(self, watchdog_ms: float = 300):
         super().__init__()
         self.connected = True
         self.watchdog_s = watchdog_ms / 1000
+        self.pulse_min, self.pulse_max = firmware_limits()
         self.pulses = None                      # what the servos would be doing
         self._fw_state = "DISARMED"
         self._last_c = None
@@ -177,20 +201,33 @@ class FakeNano(Link):
 
     def _write(self, line: str):
         kind, seq, fields = decode(line)
-        if kind == "A":
-            if self._fw_state != "DISARMED":
-                return self._reply("E", seq, 7)
-            self._fw_state, self._last_c = "ARMED", time.monotonic()
-        elif kind == "D":
-            self._fw_state, self.pulses = "DISARMED", None
-        elif kind == "C":
-            if self._fw_state not in ("ARMED", "HOLD"):
+        nfields = 2 + len(fields)               # the firmware counts TYPE and seq too
+        st = self._fw_state
+        if kind == "C":                         # handle_c
+            if nfields != 2 + 5:
+                return self._reply("E", seq, 2)
+            if st not in ("ARMED", "HOLD"):
                 return self._reply("E", seq, 4)
+            if not all(f.isdigit() for f in fields):
+                return self._reply("E", seq, 2)
             p = [int(f) for f in fields]
-            if any(not 1000 <= v <= 2000 for v in p):   # firmware v0's hard limits
+            if any(not lo <= v <= hi for v, lo, hi in zip(p, self.pulse_min, self.pulse_max)):
                 return self._reply("E", seq, 3)
             self.pulses, self._fw_state, self._last_c = p, "ARMED", time.monotonic()
-        elif kind != "P":
+        elif kind in ("A", "D", "H", "P") and nfields != 2:
+            return self._reply("E", seq, 2)     # every other type takes no fields
+        elif kind == "A":                       # handle_a
+            if st != "DISARMED":
+                return self._reply("E", seq, 7)
+            self._fw_state, self._last_c = "ARMED", time.monotonic()
+        elif kind == "D":                       # handle_d: FAULT only clears on reset
+            self.pulses = None
+            if st != "FAULT":
+                self._fw_state = "DISARMED"
+        elif kind == "H":                       # handle_h: v0 acks but does not move
+            if st != "ARMED":
+                return self._reply("E", seq, 4)
+        elif kind != "P":                       # handle_p: ping, touches nothing
             return self._reply("E", seq, 5)
         self._reply("K", seq, self._fw_state)
 
