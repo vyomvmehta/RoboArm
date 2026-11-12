@@ -23,7 +23,9 @@ joints:
   j2_elbow:    {direction: -1, us_per_deg: 11, min_us: 550, max_us: 2550}  # MG996R: ASSUMED; four-bar -> servo sets the forearm's absolute angle, rework at calibration
   j3_wrist:    {direction: 1,  us_per_deg: 11, min_us: 550, max_us: 2550}  # MG90S: MEASURED Nov 10
 
-gripper:  # opening in mm -> pulse. Full 0-40 mm = 96 deg of servo turn (D17) = 1056 us at 11 us/deg,
-          # centred on 1500 until the horn is fitted and the real closed/open pulses are measured
-  closed_us: 972
-  open_us: 2028
+gripper:  # opening in mm -> pulse. Tilting-finger gripper (D17, Nov 11): 24-40 mm = 8 mm of rack
+          # travel = 38 deg of servo turn = ~420 us at 11 us/deg, centred on 1500 until the horn
+          # is fitted and the real closed/open pulses are measured. Pairs with arm.yaml
+          # gripper closed_mm 24 / open_mm 40 (on cad/gripper).
+  closed_us: 1290
+  open_us: 1710
