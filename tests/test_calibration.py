@@ -42,4 +42,20 @@ def test_real_config_turns_park_pose_into_pulses():
     from arm.config import load_arm
     cal = load_calibration(load_arm())
     pulses = cal.to_pulses([0, 90, -130, -40, 40])
-    assert len(pulses) == 5 and all(1000 <= p <= 2000 for p in pulses)
+    assert len(pulses) == 5
+    for name, p in zip(("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist"), pulses):
+        j = cal.cal["joints"][name]
+        assert j["min_us"] <= p <= j["max_us"]
+
+
+def test_every_joint_limit_fits_inside_the_pulse_limits():
+    # If this fails, a slider position allowed by arm.yaml would be refused by calibration.
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    arm = load_arm()
+    cal = load_calibration(arm)
+    for name in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist"):
+        for deg in arm.raw["joints"][name]["limits"]:
+            values = [0, 60, -70, -30, 20]
+            values[("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist").index(name)] = deg
+            cal.to_pulses(values)  # raises if outside min/max

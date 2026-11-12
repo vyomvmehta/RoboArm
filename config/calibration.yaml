@@ -12,12 +12,18 @@
 
 center_us: 1500
 
+# PROVISIONAL (Nov 11, Vyom + Claude). MERGE ONLY AFTER the firmware's PULSE_MIN/PULSE_MAX are
+# widened to ~500/2600 (Ishaan): otherwise the Nano rejects every pulse outside 1000-2000 (E3).
+# us_per_deg 11 for all joints: MG90S measured (180 deg = 650-2600 us); MG996R ASSUMED the same
+# until the 180 deg ones arrive (~Nov 17) and are measured. min/max 550-2550 sits just inside the
+# measured MG90S ends (~500 / >2600) and covers every joint limit in arm.yaml at 11 us/deg.
 joints:
-  j0_base:     {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j1_shoulder: {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j2_elbow:    {direction: -1, us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j3_wrist:    {direction: 1,  us_per_deg: 11,  min_us: 1000, max_us: 2000}  # MG90S bench Nov 10: 180 deg = 650-2600 us (10.8 us/deg), end stop ~500, >2600; widen min/max to ~550-2550 WITH the firmware limits
+  j0_base:     {direction: 1,  us_per_deg: 11, min_us: 550, max_us: 2550}  # MG996R: ASSUMED
+  j1_shoulder: {direction: 1,  us_per_deg: 11, min_us: 550, max_us: 2550}  # MG996R: ASSUMED
+  j2_elbow:    {direction: -1, us_per_deg: 11, min_us: 550, max_us: 2550}  # MG996R: ASSUMED; four-bar -> servo sets the forearm's absolute angle, rework at calibration
+  j3_wrist:    {direction: 1,  us_per_deg: 11, min_us: 550, max_us: 2550}  # MG90S: MEASURED Nov 10
 
-gripper:  # opening in mm -> pulse, straight line between two measured points
-  closed_us: 1200
-  open_us: 1800
+gripper:  # opening in mm -> pulse. Full 0-40 mm = 96 deg of servo turn (D17) = 1056 us at 11 us/deg,
+          # centred on 1500 until the horn is fitted and the real closed/open pulses are measured
+  closed_us: 972
+  open_us: 2028
