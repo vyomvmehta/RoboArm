@@ -44,10 +44,18 @@ static const uint8_t  MAX_FIELDS    = 8;
 
 static const uint8_t  CHANNEL[NJOINTS]   = {0, 1, 2, 3, 4};
 
-// Firmware hard limits (PROTOCOL.md s9): a safety floor, deliberately wider than
-// the laptop's working range in config/calibration.yaml. Start conservative.
-static const uint16_t PULSE_MIN[NJOINTS] = {1000, 1000, 1000, 1000, 1000};
-static const uint16_t PULSE_MAX[NJOINTS] = {2000, 2000, 2000, 2000, 2000};
+// Firmware hard limits (PROTOCOL.md s9): a safety floor, deliberately wider than the
+// laptop's working range in config/calibration.yaml (550-2550), so they only trip on a bug.
+//
+// MEASURED (MG90S, 2026-11-10): 180 deg spans about 650-2600 us; the end stop is near 500 and
+// it is still moving at 2600. J3 wrist and J4 gripper are MG90S, so these values are theirs.
+//
+// ASSUMED for J0-J2: those are MG996R 180s, which had not arrived when this was written and
+// have never been measured. An MG996R whose travel stops at 2500 would STALL if driven to
+// 2600. Measure them (firmware/two_servo_test: 'e' then 'w') and narrow these three entries
+// before any of those joints is driven to an extreme. The arrays are per joint for that reason.
+static const uint16_t PULSE_MIN[NJOINTS] = {500, 500, 500, 500, 500};
+static const uint16_t PULSE_MAX[NJOINTS] = {2600, 2600, 2600, 2600, 2600};
 
 // ---------------------------------------------------------------- state
 
