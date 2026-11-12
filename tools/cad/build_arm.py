@@ -56,10 +56,14 @@ HORN_CENTRE = 6.5   # access hole for the horn's own centre screw
 
 # Z layers (see the docstring)
 UA_Z = (3.0, 9.0)
-UA_BOSS_Z = (1.0, 9.0)
+UA_BOSS_Z = (2.5, 10.5)            # above the rod layer (top 2): a boss reaching down to 1 hit the
+                                      # rod with the elbow folded (interference check, Nov 11)
 ROD_Z = (-3.0, 2.0)
 LOW_Z = (-9.0, -4.0)                 # crank and forearm
-FA_BOSS_Z = (-9.0, 2.0)              # forearm boss reaches up through the UA lip to the 608
+FA_BOSS_Z = (-9.0, 2.5)              # forearm boss reaches up to the UA lip...
+COLLAR_D, COLLAR_Z = 11.0, (2.5, 3.5)  # ...then a Ø11 collar touches ONLY the 608's inner ring
+SPACER = (11.0, 8.4, 1.5)            # printed ring under the M8 head: OD, ID, height (inner ring only)
+PAD_D = 7.0                          # Ø7 x 1 pad at each rod pin: the rod rubs on a small ring, not a face
 
 # Wrist: MG90S in the forearm end, shaft pointing -Z; tabs on the forearm's bottom face.
 MG90S_W, MG90S_L, MG90S_SHAFT = 11.9, 22.8, 5.6
@@ -114,6 +118,8 @@ def build_crank(sw):
     for r in HORN_SCREWS:                        # horn screws: heads on top, recessed
         counterbore(p, r, 0, LOW_Z[1], from_top=True)
     counterbore(p, CRANK, 0, LOW_Z[0], from_top=False)  # pin screw head underneath (on the horn)
+    p.boss(lambda s: s.circle(CRANK, 0, PAD_D), LOW_Z[1], ROD_Z[0] - LOW_Z[1])
+    p.cut(lambda s: s.circle(CRANK, 0, M3))
     return p.finish()
 
 
@@ -130,8 +136,12 @@ def build_forearm(sw):
     """E at x=0 (elbow bolt), L at x=-CRANK (lever, behind the elbow), W at x=L2 (wrist)."""
     p = g.Part(sw, "Forearm")
     end = L2 + MG90S_SHAFT + 2.35 + 2.5          # past the far tab hole with 2.5 of wall
-    link(p, -CRANK, end, 16, 6.5, 8, LOW_Z)
+    # The round end's centre sits 8 BEFORE the tip, so the tip is really at `end` (the first
+    # build put the centre at `end`: tip 18.45 past W, which hit the wrist bracket at 17).
+    link(p, -CRANK, end - 8, 16, 6.5, 8, LOW_Z)
     p.boss(lambda s: s.circle(0, 0, 14), FA_BOSS_Z[0], FA_BOSS_Z[1] - FA_BOSS_Z[0])
+    p.boss(lambda s: s.circle(0, 0, COLLAR_D), COLLAR_Z[0], COLLAR_Z[1] - COLLAR_Z[0])
+    p.boss(lambda s: s.circle(-CRANK, 0, PAD_D), LOW_Z[1], ROD_Z[0] - LOW_Z[1])
     p.cut(lambda s: s.circle(0, 0, M8))
     p.cut(lambda s: s.circle(-CRANK, 0, M3))
     # MG90S: shaft on W, body running back along the forearm, inserted from below.
@@ -140,6 +150,15 @@ def build_forearm(sw):
     p.cut(lambda s: s.rect(x0, -MG90S_W / 2, x1, MG90S_W / 2))
     p.cut(lambda s: (s.circle(xc - MG90S_TABS / 2, 0, M2_PILOT),
                      s.circle(xc + MG90S_TABS / 2, 0, M2_PILOT)))
+    return p.finish()
+
+
+def build_elbow_spacer(sw):
+    """Ring under the M8 bolt head: presses on the 608's inner ring only (Ø11 < its ~12 OD)."""
+    od, idd, h = SPACER
+    p = g.Part(sw, "Elbow Spacer")
+    p.boss(lambda s: s.circle(0, 0, od), UA_BOSS_Z[1], h)
+    p.cut(lambda s: s.circle(0, 0, idd))
     return p.finish()
 
 
@@ -180,6 +199,7 @@ def probe_right_plane(sw):
     p.fm.FeatureExtrusion3(True, False, False, 0, 0, 0.001, 0, False, False, False, False, 0, 0,
                            False, False, False, False, True, True, True, 0, 0, False)
     box = p.doc.GetBodies2(0, True)[0].GetBodyBox
+    box = box() if callable(box) else box
     centre = [round((box[i] + box[i + 3]) / 2 * 1000) for i in range(3)]   # mm
     sw.CloseDoc(p.doc.GetTitle)
     sx = ("y" if abs(centre[1]) == 10 else "z", 1 if 10 in centre else -1)
@@ -235,6 +255,7 @@ def pose_transforms(theta1, phi_f, theta3):
         "Crank": (math.degrees(psi), 0.0, 0.0),
         "Rod": (theta1, *C),
         "Forearm": (phi_f, *E),
+        "Elbow Spacer": (phi_f, *E),
         "Wrist Bracket": (phi_f + theta3, *W),
     }
 
@@ -267,6 +288,10 @@ def build_assembly(sw, parts, bracket_path, gripper_asm, poses):
         c, s = math.cos(math.radians(deg)), math.sin(math.radians(deg))
         return xform((c, s, 0), (-s, c, 0), (0, 0, 1), (x, y, z))
 
+    # AddComponent5 only inserts documents that are already open in SolidWorks.
+    for path in [bracket_path, *parts.values(), gripper_asm]:
+        if not sw.GetOpenDocumentByName(str(path)):
+            sw.OpenDoc(str(path), 2 if str(path).endswith(".SLDASM") else 1)
     doc = sw.NewDocument(sw.GetUserPreferenceStringValue(9), 0, 0, 0)
     asm = tlb.IAssemblyDoc(doc._oleobj_)
     comps = {}
@@ -334,6 +359,15 @@ def poses_from_ik():
         a = ik(cfg.geometry, r, 0, z, math.radians(pitch), limits=cfg.limits)
         t1, t2, t3 = (math.degrees(v) for v in (a.theta1, a.theta2, a.theta3))
         out[label] = (t1, t1 + t2, t3)            # forearm absolute = theta1 + theta2
+    # Extremes: wrist at both limits, elbow fully folded / nearly straight (mid shoulder).
+    lim = cfg.raw["joints"]
+    w_lo, w_hi = lim["j3_wrist"]["limits"]
+    e_lo, e_hi = lim["j2_elbow"]["limits"]
+    for t3 in range(-70, int(w_lo) - 1, -10):          # sweep: where does the wrist hit?
+        out[f"wrist {t3}"] = (60.0, -30.0, float(t3))
+    out["wrist max"] = (60.0, -30.0, float(w_hi))
+    out["elbow folded"] = (60.0, 60.0 + e_lo, -30.0)
+    out["elbow straight"] = (60.0, 60.0 + e_hi - 10, -60.0)
     park = cfg.park
     out["park"] = tuple(math.degrees(v) for v in (park.theta1, park.theta1 + park.theta2,
                                                    park.theta3))
@@ -357,12 +391,22 @@ def widen_shoulder_bracket(sw, gap=44.0):
 def main():
     sw = w.Dispatch("SldWorks.Application")
     sw.Visible = True
-    for title in ("Arm", "Upper Arm", "Crank", "Rod", "Forearm", "Wrist Bracket", "_probe"):
-        sw.CloseDoc(title)                         # only our own files, never other work
+    # Close only OUR files (matched by full path), never other open work.
+    ours = {str(g.OUT / f"{n}.SLDPRT").lower() for n in
+            ("Upper Arm", "Crank", "Rod", "Forearm", "Elbow Spacer", "Wrist Bracket")}
+    ours.add(str(g.OUT / "Arm.SLDASM").lower())
+    d, titles = sw.GetFirstDocument, []
+    while d:
+        if (d.GetPathName or "").lower() in ours or d.GetTitle.startswith("_probe"):
+            titles.append(d.GetTitle)
+        d = d.GetNext
+    for t in titles:
+        sw.CloseDoc(t)
     side = make_side_holes(probe_right_plane(sw))
     parts, mass = {}, {}
     for name, build in (("Upper Arm", build_upper_arm), ("Crank", build_crank),
-                        ("Rod", build_rod), ("Forearm", build_forearm)):
+                        ("Rod", build_rod), ("Forearm", build_forearm),
+                        ("Elbow Spacer", build_elbow_spacer)):
         path, vol = build(sw)
         parts[name], mass[name] = path, vol * 1.24
     path, vol = build_wrist_bracket(sw, side)
@@ -375,7 +419,7 @@ def main():
     asm, report = build_assembly(sw, parts, g.OUT / "Shoulder Bracket.SLDPRT",
                                  g.OUT / "Gripper.SLDASM", poses)
     for label, angles, found in report:
-        print(f"pose {label:5s} (upper arm, forearm abs, wrist) = "
+        print(f"pose {label:14s} (upper arm, forearm abs, wrist) = "
               f"{tuple(round(a) for a in angles)}: {len(found)} interference(s) {found}")
     print("assembly:", asm)
 

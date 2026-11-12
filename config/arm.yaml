@@ -30,7 +30,7 @@ joints:
     limits: [-145, 0]     # -145: forearm folded nearly onto the upper arm (check in CAD for collision)
   j3_wrist:
     window: [-120, 60]    # picking straight down needs about -85..+10 (workspace check, 2026-11-04)
-    limits: [-110, 50]
+    limits: [-95, 50]     # -110 folds the wrist bracket + gripper into the forearm; clear at -100 (D19 sweep)
 
 gripper:  # J4. Opening in mm is mapped to pulses in calibration.yaml once the gripper exists
   open_mm: 40           # estimate, from Siddharth's gripper CAD
