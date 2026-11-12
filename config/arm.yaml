@@ -11,7 +11,7 @@
 links:  # D14 (Nov 9): four-bar, 13 / 12 / 7 cm; may grow to 15 / 14 after the MG996R stall test (~Nov 17)
   l1: 130               # shoulder axis -> elbow axis
   l2: 120               # elbow axis -> wrist axis
-  l3: 70                # wrist axis -> grasp point between the jaws
+  l3: 75                # wrist axis -> grasp point: wrist bracket 20 + gripper posts 19 + jaw centre ~36.5 (D19)
   shoulder_height: 90   # ESTIMATE until Siddharth's base exists: base height + turntable + 50 (shoulder bracket: axis 50.0 above its underside, Nov 10)
   shoulder_offset: 0    # shoulder bracket is centred on the turntable axis (Nov 10)
 
