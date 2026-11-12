@@ -248,3 +248,10 @@ Replaces the fixed mitten (Nov 10). Each finger is its own part on an M2 pivot o
 - Checked: 0 interferences at 24, 28, 30, 34, 38, 40 mm; a control (fingers forced to −45° at 24 mm) collides, so the check is sensitive. The follower slot cut was verified by volume.
 - Knock-on: l3 75 → **80** (the grasp moves to the tilted tips); whole arm re-checked with the new gripper: the elbow fully folded (−145°) let the thumb graze the shoulder bracket, so the **elbow limit is now −140°** (the closest pick needs ~−133°). Calibration: the gripper now spans 24–40 mm over ~38° (~420 µs at 11 µs/°), so update the gripper pulses on `calib/provisional`.
 - Costs accepted: grip at the fingertips (fine for light blocks), 2 pivots of slop per finger, +4 small screws (2× M2 pivot, 2× M2 follower).
+
+### D17 update (2026-11-12): curled fingers (Vyom chose option A)
+Fingers are now bent like a relaxed hand: palm 9 mm straight, middle segment 7 mm curled 20° in, fingertip 6 mm curled 40° in, rounded tips; thumb 8 mm + 8 mm curled 30°. The four fingers separate from the big knuckle up; the palm stays one piece. Still on the tilting mechanism (15° flare at rest).
+- **Option B was also built and shown** (fixed bent fingers, no tilt: middle + tip lie flat on the block at any size, fewer parts). Vyom chose A for the look, accepting that **only the fingertips touch** the block (measured: palm and middle segments stay 3.5–4.9 mm clear at a 30 mm block, which is gripped at a base opening of 36.2 mm). Fine for light blocks; fingertips take the load.
+- Minimum opening 24 → **26 mm**: at 24 the curled tips would pass only 1.3 mm apart (6.1 mm at 26). Rack end stop moved; `arm.yaml` closed_mm 26.
+- **l3 80 → 88** (the grasp is now at the fingertips). Whole arm re-checked: 0 interferences at all 11 poses; tests pass. Gripper 0 interferences 26–40 mm. Calibration (calib/provisional): gripper 1316–1684 µs (7 mm of rack travel = 33° of servo).
+- Note: "opening" in arm.yaml / the web page is the distance between the finger roots, not between the fingertips.

@@ -86,13 +86,19 @@ HORN_PILOT_D = 1.6               # small self-tapping screws up through the horn
 # -17.5 at 24 mm. Below ~24 mm the fingertips would collide, so the racks stop at 24-40 mm.
 H_F = 14.3
 CAM_X = 17.8
-X_CLOSED, X_OPEN = 15.0, 23.0          # rack end positions: opening 2*(x_e - 3) = 24 .. 40
+X_CLOSED, X_OPEN = 16.0, 23.0          # rack end positions: opening 2*(x_e - 3) = 26 .. 40
+                                       # (26, not 24: the curled tips would pass only 1.3 mm apart)
 X_E0 = CAM_X + 1.5                     # parts are modelled with zero tilt (x_e = 19.3)
 XP0 = X_E0 - 1.5                       # pivot x (middle of the 3 mm finger plate)
 Z_PIV = 24.5                           # pivot height: inside the rack's connector block
 Z_FOL = Z_PIV - H_F                    # follower height (10.2)
 PLATE_Z0 = Z_PIV + 4.0                 # finger plate starts above the block, clear at any tilt
-FINGERS_TOP, THUMB_TOP = 50.0, 46.0
+FINGERS_TOP, THUMB_TOP = 50.0, 46.0   # (straight-finger heights, kept for reference)
+# Curled fingers (Vyom chose option A, Nov 12): segments (length, angle from the finger's own
+# vertical; negative = curls INWARD), a 3 mm strip with a rounded tip. Palm / middle / tip.
+# At rest (15 deg flare) they look like a relaxed hand; gripping, the FINGERTIPS take the load.
+FINGER_SEGS = [(9, 0), (7, -20), (6, -40)]
+THUMB_SEGS = [(8, 0), (8, -30)]
 TAB_Y = (None, None)                   # set below from Y_BACK
 M2_CLEAR = 2.4
 
@@ -103,6 +109,39 @@ def tilt_deg(x_e):
 
 def opening_mm(x_e):
     return 2 * (x_e - 3.0)
+
+
+def finger_strip(segs):
+    """Bent 3 mm strip with a rounded tip, for the rack-A finger at zero tilt, in model (x, z).
+    Returns (outline, centreline points). Starts 1 mm down inside the tab so they fuse."""
+    pts = [(XP0, PLATE_Z0 - 1.0), (XP0, PLATE_Z0)]
+    x, z = XP0, PLATE_Z0
+    for L, a in segs:
+        r = math.radians(a)
+        x, z = x + L * math.sin(r), z + L * math.cos(r)
+        pts.append((x, z))
+    angs = [segs[0][1]] + [a for _, a in segs]
+    inner, outer = [], []
+    for i, (px, pz) in enumerate(pts):
+        if i in (0, len(pts) - 1):
+            r = math.radians(angs[min(i, len(angs) - 1)])
+            n, t = (-math.cos(r), math.sin(r)), 1.5
+        else:                                   # mitre at each knuckle
+            r1, r2 = math.radians(angs[i]), math.radians(angs[min(i + 1, len(angs) - 1)])
+            n1, n2 = (-math.cos(r1), math.sin(r1)), (-math.cos(r2), math.sin(r2))
+            n = ((n1[0] + n2[0]) / 2, (n1[1] + n2[1]) / 2)
+            m = math.hypot(*n)
+            n = (n[0] / m, n[1] / m)
+            t = 1.5 / max(0.5, n[0] * n1[0] + n[1] * n1[1])
+        inner.append((px + t * n[0], pz + t * n[1]))
+        outer.append((px - t * n[0], pz - t * n[1]))
+    r = math.radians(angs[-1])
+    u, n = (math.sin(r), math.cos(r)), (-math.cos(r), math.sin(r))
+    tx, tz = pts[-1]
+    arc = [(tx + 1.5 * (math.cos(q) * n[0] + math.sin(q) * u[0]),
+            tz + 1.5 * (math.cos(q) * n[1] + math.sin(q) * u[1]))
+           for q in [k * math.pi / 8 for k in range(1, 8)]]
+    return inner + arc + list(reversed(outer)), pts
 
 
 # Derived rack geometry (rack A, on the +Y side; jaw B is the same part turned 180 deg).
@@ -191,6 +230,28 @@ class Part:
                                 *start, False)
         if f is None:
             raise RuntimeError(f"{self.name}: side cut on {pm.plane} failed")
+        return f
+
+    def side_boss(self, pm, outline, a0, a1):
+        """Extrude an outline drawn in a side plane's model axes (e.g. x, z on the Top Plane)
+        from normal coordinate a0 to a1 (e.g. y from -12 to 23.5)."""
+        self.doc.ClearSelection2(True)
+        self.doc.Extension.SelectByID2(pm.plane, "PLANE", 0, 0, 0, False, 0, NOTHING, 0)
+        self.skm.InsertSketch(True)
+        self.skm.AddToDB = True
+        uv = [pm.uv(a, b) for a, b in outline]
+        for (u1, v1), (u2, v2) in zip(uv, uv[1:] + uv[:1]):
+            self.skm.CreateLine(u1 * MM, v1 * MM, 0, u2 * MM, v2 * MM, 0)
+        self.skm.AddToDB = False
+        self.skm.InsertSketch(True)
+        name = self.doc.FeatureByPositionReverse(0).Name
+        self.doc.Extension.SelectByID2(name, "SKETCH", 0, 0, 0, False, 0, NOTHING, 0)
+        off = a0 * pm.normal_sign
+        f = self.fm.FeatureExtrusion3(True, False, pm.normal_sign < 0, 0, 0, (a1 - a0) * MM, 0,
+                                      False, False, False, False, 0, 0, False, False, False, False,
+                                      True, True, True, 3, abs(off) * MM, off < 0)
+        if f is None:
+            raise RuntimeError(f"{self.name}: side boss on {pm.plane} failed")
         return f
 
     def volume(self):
@@ -363,32 +424,28 @@ def build_rack(sw, top):
 
 
 def build_finger(sw, top, right, thumb: bool):
-    """Mitten finger (rack A side) or thumb (rack B side), modelled upright (zero tilt) on
-    the +Y side at x_e = X_E0. A tab beside the rack's block carries the pivot P and the
-    follower F; the gripping plate sits above the block so it clears it at any tilt."""
+    """Curled mitten finger (rack A side) or thumb (rack B side), modelled upright (zero tilt)
+    on the +Y side at x_e = X_E0. A tab beside the rack's block carries the pivot P and the
+    follower F; the curled strip rises from the tab above the block, clear of it at any tilt."""
     j = Part(sw, "Gripper Thumb" if thumb else "Gripper Fingers")
-    top_z = THUMB_TOP if thumb else FINGERS_TOP
+    segs = THUMB_SEGS if thumb else FINGER_SEGS
     y_lo = -6.0 if thumb else -12.0
     j.boss(lambda s: s.rect(XP0 - 3, TAB_Y[0], XP0 + 3, TAB_Y[1]), Z_FOL - 3.0,
            (PLATE_Z0 + 3.0) - (Z_FOL - 3.0))
-    j.boss(lambda s: s.rect(XP0 - FINGER_T / 2, y_lo, XP0 + FINGER_T / 2, TAB_Y[1]),
-           PLATE_Z0, top_z - PLATE_Z0)
+    outline, cl = finger_strip(segs)
+    j.side_boss(top, outline, y_lo, TAB_Y[1])
     # Pivot (clearance: the finger turns on the screw) and follower (pilot: screw fixed in tab).
     j.side_cut(top, [("circle", XP0, Z_PIV, M2_CLEAR), ("circle", XP0, Z_FOL, M2_PILOT)])
-    # Silhouette, cut along X through the plate (Right Plane: model y, z).
-    band = PLATE_Z0 + 5.5                       # the band that joins the plate to the tab
+    # Silhouette along X (Right Plane: model y, z). The band near the base joins the strip
+    # to the tab; above it only the hand part (y -12..12 / thumb -6..6) carries on.
+    band = PLATE_Z0 + 5.5
+    knuckle = cl[2][1]                          # top of the palm segment
     if thumb:
-        # Thumb: one wide digit centred on the gripper (y -6..6), joined to the tab low down.
-        j.side_cut(right, [("rect", 6.0, band, TAB_Y[1] + 1, top_z + 1)])
-        corners = [("rect", -7.5, top_z - 2.0, -5.0, top_z + 1), ("rect", 5.0, top_z - 2.0, 7.5, top_z + 1)]
+        j.side_cut(right, [("rect", 6.0, band, TAB_Y[1] + 1, 80)])
     else:
-        # Four fingers across y -12..12: three 1.2 mm gaps, 10 deep; the plate past y 12
-        # stops above the band so the tab side looks like the back of the hand.
-        j.side_cut(right, [("rect", g - 0.6, top_z - 10, g + 0.6, top_z + 1) for g in (-6.0, 0.0, 6.0)]
-                   + [("rect", 12.0, band, TAB_Y[1] + 1, top_z + 1)])
-        # Outer corners only (rects in one sketch must not touch; the gaps shape the rest).
-        corners = [("rect", -13.0, top_z - 2.0, -10.5, top_z + 1), ("rect", 10.5, top_z - 2.0, 13.0, top_z + 1)]
-    j.side_cut(right, corners)                  # take the square outer corners off the tips
+        # Four fingers: three 1.2 mm gaps from the big knuckle up (the palm stays one piece).
+        j.side_cut(right, [("rect", gy - 0.6, knuckle, gy + 0.6, 80) for gy in (-6.0, 0.0, 6.0)]
+                   + [("rect", 12.0, band, TAB_Y[1] + 1, 80)])
     return j.finish()
 
 

@@ -11,7 +11,7 @@
 links:  # D14 (Nov 9): four-bar, 13 / 12 / 7 cm; may grow to 15 / 14 after the MG996R stall test (~Nov 17)
   l1: 130               # shoulder axis -> elbow axis
   l2: 120               # elbow axis -> wrist axis
-  l3: 80                # wrist axis -> grasp point: bracket 20 + gripper 19 + ~41 to where the tilted fingertips hold the block (D17/D19)
+  l3: 88                # wrist axis -> grasp point: bracket 20 + gripper 19 + 49 to the curled fingertips (D17, Nov 12)
   shoulder_height: 90   # ESTIMATE until Siddharth's base exists: base height + turntable + 50 (shoulder bracket: axis 50.0 above its underside, Nov 10)
   shoulder_offset: 0    # shoulder bracket is centred on the turntable axis (Nov 10)
 
@@ -34,7 +34,7 @@ joints:
 
 gripper:  # J4. Opening in mm is mapped to pulses in calibration.yaml once the gripper exists
   open_mm: 40            # fully open = fingers flared 15 deg outward (rest)
-  closed_mm: 24          # tilting fingers (D17, Nov 11): below 24 the fingertips collide; racks stop here
+  closed_mm: 26          # curled fingertips (D17, Nov 12): below 26 the tips pass < 6 mm apart; racks stop here
 
 speed_limits_deg_per_s:  # start low (CLAUDE.md section 12); widen once the arm is proven
   j0_base: 45
