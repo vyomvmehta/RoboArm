@@ -11,7 +11,7 @@ The plain-language version is the team plan page: https://claude.ai/artifact/FYa
 
 > **Update 2026-11-08:** CAD slipped while the arm size (D14) is on hold. New rule: gripper, base, web page and firmware go ahead now; links CAD starts the day after the 180° MG996Rs arrive and the stall test is done (or with option A, 11/10/7, if they're not here by Thu Nov 12). Then ~3 days CAD (+3 for a four-bar), ~3 days printing, ~3 days assembly + calibration. V1 target ~Nov 22–29; hard stop Dec 6 unchanged. The plan page has the current version.
 
-> **Update 2026-11-12:** the 180° MG996Rs arrived (5 days early). **Fri Nov 13:** big-motor tests (hold, range, strength) + LM2596 under stall + RidgidWare run. **Sat Nov 14: Niagara, laptop work only** (Vyom: move-to-point + arm drawing; Ishaan: motion limiter + pulse-limits PR; Siddharth: base CAD + reviews). **Sun Nov 15:** review call (size fixed by the strength test), print files, motor cables, cable/board plan. Then print Nov 18–20, assemble Nov 21–23, calibrate Nov 24–25, V1 Nov 22–29.
+> **Update 2026-11-12:** the 180° MG996Rs arrived (5 days early). **Fri Nov 13:** big-motor tests (hold, range, strength) + LM2596 under stall + RidgidWare run. **Sat Nov 14: Niagara, laptop work only** (Vyom: move-to-point + arm drawing; Ishaan: motion limiter + pulse-limits PR; Siddharth: base CAD + reviews). **Sun Nov 15:** review call (size fixed by the strength test), print files, motor cables, cable/board plan. Then (pulled 2 days forward, Nov 12) **print Nov 16–18, assemble Nov 19–21, calibrate Nov 22–23, V1 Nov 20–27**; speed limiter + web page by Nov 19.
 
 ## Dated deliverables
 
