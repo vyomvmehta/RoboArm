@@ -4,7 +4,7 @@ Two-jaw parallel gripper: one pinion on the MG90S horn drives two identical rack
 opposite directions, so the jaws stay parallel and centred (CLAUDE.md 4.1, D17).
 
 Run with SolidWorks installed (it opens SolidWorks):   py tools/cad/build_gripper.py
-Output: SolidWorks Parts/Gripper Body|Pinion|Jaw.SLDPRT + Gripper.SLDASM
+Output: SolidWorks Parts/Gripper/ (Body, Pinion, Rack, Fingers, Thumb + Gripper.SLDASM)
 
 World frame (all parts are modelled in place, so the assembly needs no mates):
   origin = servo shaft axis at the deck's top face (where the MG90S tabs sit)
@@ -23,6 +23,7 @@ import win32com.client as w
 
 # ----------------------------------------------------------------------------- parameters
 OUT = Path(__file__).resolve().parents[2] / "SolidWorks Parts"
+GRIPPER_DIR = OUT / "Gripper"              # one folder per assembly (Nov 12)
 
 # Gear (D17): module 1.5 prints cleanly on a 0.4 mm nozzle; 16 teeth -> 24 mm pitch dia.
 # The tooth count MUST be even: the second jaw is the same part turned 180 deg, so 180 deg
@@ -121,8 +122,9 @@ NOTHING = w.VARIANT(pythoncom.VT_DISPATCH, None)
 
 
 class Part:
-    def __init__(self, sw, name):
+    def __init__(self, sw, name, folder=None):
         self.sw, self.name = sw, name
+        self.folder = folder or GRIPPER_DIR
         self.doc = sw.NewDocument(sw.GetUserPreferenceStringValue(8), 0, 0, 0)
         self.skm = self.doc.SketchManager
         self.fm = self.doc.FeatureManager
@@ -228,7 +230,8 @@ class Part:
         self.doc.ForceRebuild3(False)
         self.doc.ShowNamedView2("*Isometric", 7)
         self.doc.ViewZoomtofit2()
-        path = OUT / f"{self.name}.SLDPRT"
+        self.folder.mkdir(parents=True, exist_ok=True)
+        path = self.folder / f"{self.name}.SLDPRT"
         if not self.doc.SaveAs(str(path)):
             raise RuntimeError(f"could not save {path}")
         mp = self.doc.GetMassProperties  # [cx, cy, cz, volume, area, mass, ...] in SI
@@ -483,7 +486,7 @@ def build_assembly(sw, parts):
     set_opening(X_OPEN)                       # save it at rest: fully open, fingers flared
     doc.ShowNamedView2("*Isometric", 7)
     doc.ViewZoomtofit2()
-    path = OUT / "Gripper.SLDASM"
+    path = GRIPPER_DIR / "Gripper.SLDASM"
     doc.SaveAs(str(path))
     return path, results
 
@@ -507,7 +510,8 @@ def main():
     sw.Visible = True
     names = ("Gripper Body", "Gripper Pinion", "Gripper Rack", "Gripper Fingers",
              "Gripper Thumb", "Gripper Jaw")
-    ours = {str(OUT / f"{n}.SLDPRT").lower() for n in names} | {str(OUT / "Gripper.SLDASM").lower()}
+    ours = {str(f / f"{n}.SLDPRT").lower() for n in names for f in (OUT, GRIPPER_DIR)}
+    ours |= {str(f / "Gripper.SLDASM").lower() for f in (OUT, GRIPPER_DIR)}
     d, titles = sw.GetFirstDocument, []
     while d:                                   # close only OUR files, never other open work
         if (d.GetPathName or "").lower() in ours:

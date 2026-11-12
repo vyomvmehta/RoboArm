@@ -1,6 +1,7 @@
 """Build the four-bar arm links in SolidWorks from Python (D19, 2026-11-11, Vyom + Claude).
 
-Parts (SolidWorks Parts/):  Upper Arm, Crank, Rod, Forearm, Wrist Bracket  (+ Arm.SLDASM)
+Parts (SolidWorks Parts/Arm/): Shoulder Bracket (Vyom's), Upper Arm, Crank, Rod, Forearm,
+       Elbow Spacer, Wrist Bracket + Arm.SLDASM (which also pulls in ../Gripper/Gripper.SLDASM)
 Run with SolidWorks free (it opens parts in SolidWorks):   py tools/cad/build_arm.py
 
 HOW THE FOUR-BAR WORKS (D14)
@@ -41,6 +42,12 @@ import win32com.client as w
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_gripper as g  # noqa: E402  (Part helpers, OUT, MM, NOTHING)
+
+ARM_DIR = g.OUT / "Arm"                    # one folder per assembly (Nov 12)
+
+
+def Part(sw, name):
+    return g.Part(sw, name, folder=ARM_DIR)
 
 # ----------------------------------------------------------------------------- parameters
 L1 = 130.0          # upper arm, shoulder axis O -> elbow axis E      (arm.yaml l1, D14)
@@ -95,7 +102,7 @@ def counterbore(p: g.Part, x, y, face_z, from_top: bool):
 # ----------------------------------------------------------------------------- parts
 def build_upper_arm(sw):
     """O at x=0 on the shoulder horn, E at x=L1 with a 608 bearing."""
-    p = g.Part(sw, "Upper Arm")
+    p = Part(sw, "Upper Arm")
     link(p, 0, L1, 16, 12, 14, UA_Z)
     p.boss(lambda s: s.circle(L1, 0, 28), UA_BOSS_Z[0], UA_BOSS_Z[1] - UA_BOSS_Z[0])
     # Shoulder end: horn screws along the arm (the horn's arm points at the elbow).
@@ -111,7 +118,7 @@ def build_upper_arm(sw):
 
 def build_crank(sw):
     """O at x=0 on the elbow horn, C at x=CRANK: the rod's pin."""
-    p = g.Part(sw, "Crank")
+    p = Part(sw, "Crank")
     link(p, 0, CRANK, 12, 9, 6.5, LOW_Z)
     p.cut(lambda s: s.circle(0, 0, HORN_CENTRE))
     p.cut(lambda s: [s.circle(r, 0, M3) for r in HORN_SCREWS] + [s.circle(CRANK, 0, M3)])
@@ -125,7 +132,7 @@ def build_crank(sw):
 
 def build_rod(sw):
     """C at x=0, L at x=L1 (same length as the upper arm: parallelogram)."""
-    p = g.Part(sw, "Rod")
+    p = Part(sw, "Rod")
     link(p, 0, L1, 10, 6.5, 6.5, ROD_Z)
     p.cut(lambda s: (s.circle(0, 0, M3), s.circle(L1, 0, M3)))
     counterbore(p, L1, 0, ROD_Z[1], from_top=True)      # L pin: head on top, nut under the lever
@@ -134,7 +141,7 @@ def build_rod(sw):
 
 def build_forearm(sw):
     """E at x=0 (elbow bolt), L at x=-CRANK (lever, behind the elbow), W at x=L2 (wrist)."""
-    p = g.Part(sw, "Forearm")
+    p = Part(sw, "Forearm")
     end = L2 + MG90S_SHAFT + 2.35 + 2.5          # past the far tab hole with 2.5 of wall
     # The round end's centre sits 8 BEFORE the tip, so the tip is really at `end` (the first
     # build put the centre at `end`: tip 18.45 past W, which hit the wrist bracket at 17).
@@ -156,7 +163,7 @@ def build_forearm(sw):
 def build_elbow_spacer(sw):
     """Ring under the M8 bolt head: presses on the 608's inner ring only (Ø11 < its ~12 OD)."""
     od, idd, h = SPACER
-    p = g.Part(sw, "Elbow Spacer")
+    p = Part(sw, "Elbow Spacer")
     p.boss(lambda s: s.circle(0, 0, od), UA_BOSS_Z[1], h)
     p.cut(lambda s: s.circle(0, 0, idd))
     return p.finish()
@@ -165,7 +172,7 @@ def build_elbow_spacer(sw):
 def build_wrist_bracket(sw, side):
     """W at the origin. A disc screwed to the wrist servo's horn (below it, z -26..-23) and a
     plate across the approach direction (+X) that the gripper's two M3 posts bolt to."""
-    p = g.Part(sw, "Wrist Bracket")
+    p = Part(sw, "Wrist Bracket")
     z_top = WRIST_HORN_TOP                              # -23
     z_bot = z_top - 3.0
     plate_x0, plate_x1 = BRACKET_REACH - 3.0, BRACKET_REACH
@@ -342,7 +349,7 @@ def build_assembly(sw, parts, bracket_path, gripper_asm, poses):
     set_pose(*first)
     doc.ShowNamedView2("*Isometric", 7)
     doc.ViewZoomtofit2()
-    path = g.OUT / "Arm.SLDASM"
+    path = ARM_DIR / "Arm.SLDASM"
     doc.SaveAs(str(path))
     return path, report
 
@@ -376,7 +383,7 @@ def poses_from_ik():
 
 def widen_shoulder_bracket(sw, gap=44.0):
     """The rod needs its own layer, so the towers move from 39 to 44 mm apart (Plane1 22)."""
-    path = str(g.OUT / "Shoulder Bracket.SLDPRT")
+    path = str(ARM_DIR / "Shoulder Bracket.SLDPRT")
     doc = sw.GetOpenDocumentByName(path) or sw.OpenDoc(path, 1)
     if doc is None:
         raise RuntimeError("could not open the shoulder bracket")
@@ -392,9 +399,9 @@ def main():
     sw = w.Dispatch("SldWorks.Application")
     sw.Visible = True
     # Close only OUR files (matched by full path), never other open work.
-    ours = {str(g.OUT / f"{n}.SLDPRT").lower() for n in
+    ours = {str(f / f"{n}.SLDPRT").lower() for f in (g.OUT, ARM_DIR) for n in
             ("Upper Arm", "Crank", "Rod", "Forearm", "Elbow Spacer", "Wrist Bracket")}
-    ours.add(str(g.OUT / "Arm.SLDASM").lower())
+    ours |= {str(f / "Arm.SLDASM").lower() for f in (g.OUT, ARM_DIR)}
     d, titles = sw.GetFirstDocument, []
     while d:
         if (d.GetPathName or "").lower() in ours or d.GetTitle.startswith("_probe"):
@@ -416,8 +423,8 @@ def main():
     print(f"{'links total':14s} {sum(mass.values()):5.1f} g")
     widen_shoulder_bracket(sw)
     poses = poses_from_ik()
-    asm, report = build_assembly(sw, parts, g.OUT / "Shoulder Bracket.SLDPRT",
-                                 g.OUT / "Gripper.SLDASM", poses)
+    asm, report = build_assembly(sw, parts, ARM_DIR / "Shoulder Bracket.SLDPRT",
+                                 g.GRIPPER_DIR / "Gripper.SLDASM", poses)
     for label, angles, found in report:
         print(f"pose {label:14s} (upper arm, forearm abs, wrist) = "
               f"{tuple(round(a) for a in angles)}: {len(found)} interference(s) {found}")
