@@ -44,10 +44,16 @@ static const uint8_t  MAX_FIELDS    = 8;
 
 static const uint8_t  CHANNEL[NJOINTS]   = {0, 1, 2, 3, 4};
 
-// Firmware hard limits (PROTOCOL.md s9): a safety floor, deliberately wider than
-// the laptop's working range in config/calibration.yaml. Start conservative.
-static const uint16_t PULSE_MIN[NJOINTS] = {1000, 1000, 1000, 1000, 1000};
-static const uint16_t PULSE_MAX[NJOINTS] = {2000, 2000, 2000, 2000, 2000};
+// Firmware hard limits (PROTOCOL.md s9): the last guard against a bad frame. Uniform across
+// all five joints (agreed in person with Vyom, 2026-11-13).
+//
+// MEASURED 2026-11-13 at Velocity, every servo: 450-2500 us for a full 180 deg, which is
+// 11.4 us/deg, mid-travel 1475 us.
+//
+// The laptop's working range in config/calibration.yaml is 500-2450, sitting 50 us inside
+// these, which is the margin s9 asks for.
+static const uint16_t PULSE_MIN[NJOINTS] = { 450,  450,  450,  450,  450};
+static const uint16_t PULSE_MAX[NJOINTS] = {2500, 2500, 2500, 2500, 2500};
 
 // ---------------------------------------------------------------- state
 
