@@ -44,18 +44,19 @@ static const uint8_t  MAX_FIELDS    = 8;
 
 static const uint8_t  CHANNEL[NJOINTS]   = {0, 1, 2, 3, 4};
 
-// Firmware hard limits (PROTOCOL.md s9): a safety floor just outside each servo's real
-// travel, deliberately wider than the laptop's working range in config/calibration.yaml,
-// so they only trip on a bug. Per joint, because the two servo types differ.
+// Firmware hard limits (PROTOCOL.md s9): the last guard against a bad frame. Set to the
+// MG996R's measured travel and applied uniformly across all five joints (agreed in person
+// with Vyom, 2026-11-13).
 //
 // J0-J2  MG996R 180: MEASURED 2026-11-13, all four units: 400-2450 us for a full 180 deg
-//        (11.4 us/deg), consistent across every one. Limits set 50 us outside that.
-// J3-J4  MG90S:      MEASURED 2026-11-10: end stop near 500, still moving at 2600.
+//        (11.4 us/deg), consistent across every one.
+// J3-J4  MG90S:      MEASURED 2026-11-10, both units: end stop near 500, still moving at 2600.
+//        The uniform ceiling of 2450 gives up the top of the MG90S travel; the uniform floor
+//        of 450 is below their ~500 end stop, so keep calibration.yaml's MG90S min at 550.
 //
-// Intended laptop ranges (calibration.yaml), which must stay INSIDE these:
-//        MG996R 450-2400,  MG90S 550-2550.
-static const uint16_t PULSE_MIN[NJOINTS] = {350, 350, 350, 450, 450};
-static const uint16_t PULSE_MAX[NJOINTS] = {2500, 2500, 2500, 2600, 2600};
+// Laptop working ranges (calibration.yaml) must stay INSIDE these.
+static const uint16_t PULSE_MIN[NJOINTS] = { 450,  450,  450,  450,  450};
+static const uint16_t PULSE_MAX[NJOINTS] = {2450, 2450, 2450, 2450, 2450};
 
 // ---------------------------------------------------------------- state
 

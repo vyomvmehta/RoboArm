@@ -34,9 +34,12 @@
       e          widen every channel to 400-2600 for hunting end stops
 
   SAFETY
-      Boots limp. Moves ease in 20 us steps rather than jumping. 'c' deliberately moves one
-      servo at a time: five MG996Rs starting together is the current spike D16 warns about
-      and it has never been tested on the LM2596 at 9 V.
+      Boots limp. Moves ease in 20 us steps rather than jumping, EXCEPT the first move after
+      a servo has been limp: with no position feedback there is no way to know where it is,
+      so that one jumps. Expect it.
+      Any keypress during a move stops it where it is; it does not continue to the target.
+      'c' deliberately moves one servo at a time: five MG996Rs starting together is the
+      current spike D16 warns about and it has never been tested on the LM2596 at 9 V.
 */
 
 #include <Wire.h>
@@ -85,21 +88,32 @@ void move_to(uint8_t i, uint16_t target) {
     Serial.println(F(" (press e to widen)"));
     return;
   }
-  if (current[i] < 0) {                   // limp: no idea where it is, go straight there
+  last_ch = i;
+
+  if (current[i] < 0) {                   // limp: no idea where it is, so this one jumps
     pca.writeMicroseconds(CH[i], target);
+    current[i] = target;
   } else {
     int from = current[i];
     int dir  = (target > from) ? STEP_US : -(int)STEP_US;
+    bool aborted = false;
     while (abs(target - from) > STEP_US) {
       from += dir;
       pca.writeMicroseconds(CH[i], (uint16_t)from);
+      current[i] = from;                  // keep it honest at every step
       delay(STEP_MS);
-      if (Serial.available()) break;      // any keypress aborts the move
+      if (Serial.available()) { aborted = true; break; }
+    }
+    if (aborted) {                        // STOP where it got to; do not snap to target
+      Serial.print(F("ch")); Serial.print(CH[i]);
+      Serial.print(F(" aborted at ")); Serial.print(current[i]);
+      Serial.println(F(" us"));
+      return;
     }
     pca.writeMicroseconds(CH[i], target);
+    current[i] = target;
   }
-  current[i] = target;
-  last_ch = i;
+
   Serial.print(F("ch")); Serial.print(CH[i]);
   Serial.print(F(" (")); Serial.print(LABEL[i]);
   Serial.print(F(") -> ")); Serial.print(target); Serial.println(F(" us"));
@@ -116,6 +130,8 @@ void centre_all() {
 void sweep(uint8_t i) {
   Serial.print(F("sweeping ch")); Serial.print(CH[i]);
   Serial.println(F(" slowly. Send any character to stop."));
+  move_to(i, lo_limit[i]);                // ease to the start instead of jumping to it
+  if (current[i] != (int)lo_limit[i]) return;   // the move was aborted; do not sweep
   for (uint16_t p = lo_limit[i]; p <= hi_limit[i]; p += STEP_US) {
     pca.writeMicroseconds(CH[i], p);
     current[i] = p;
