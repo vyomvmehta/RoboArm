@@ -138,13 +138,16 @@ def test_only_one_browser_can_drive_the_arm():
 # Each row: state to put the fake in, frame sent, reply the REAL firmware gives (read off
 # the handle_*() functions in firmware/arm_controller/arm_controller.ino). PR #6 review found
 # the first two rows wrong in the old FakeNano, which would have let a laptop bug pass tests.
+from arm.comms.link import firmware_limits as _fl  # noqa: E402
+_TOO_HIGH = _fl()[1][4] + 1   # one past the firmware's own limit, whatever it is
+
 FIRMWARE_CASES = [
     ("ARMED",    "H", [],                          "K", "ARMED"),   # H is a valid type
     ("ARMED",    "C", [1500] * 4,                  "E", "2"),       # wrong field count
     ("DISARMED", "C", [1500] * 4,                  "E", "2"),       # field count checked first
     ("DISARMED", "C", [1500] * 5,                  "E", "4"),       # C while not armed
     ("ARMED",    "C", [1500] * 4 + ["15x0"],       "E", "2"),       # non-number
-    ("ARMED",    "C", [1500] * 4 + [2600],         "E", "3"),       # outside the hard limit
+    ("ARMED",    "C", [1500] * 4 + [_TOO_HIGH],    "E", "3"),       # just past the hard limit
     ("DISARMED", "H", [],                          "E", "4"),       # H needs ARMED
     ("DISARMED", "A", [1],                         "E", "2"),       # A takes no fields
     ("ARMED",    "A", [],                          "E", "7"),       # A only from DISARMED
