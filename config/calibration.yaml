@@ -3,21 +3,37 @@
 # This file is part of the contract between the laptop and the firmware: don't change it
 # without telling the other side.
 #
+#   center_us:   the pulse the horn was fitted at = the joint's window centre in config/arm.yaml.
+#                A per-joint center_us overrides the top-level one.
 #   direction:   +1 if a LONGER pulse moves the joint toward MORE POSITIVE angles, else -1
-#   us_per_deg:  pulse change per degree of joint motion (MEASURE IT. MG90S bench, Nov 10:
-#                180 deg between 650 and 2600 us = ~11 us/deg, NOT the 5.6 that 1000 us/180 deg assumes)
-#   min_us/max_us: never send a pulse outside these (the servo's mechanical ends, measured)
+#   us_per_deg:  pulse change per degree of joint motion (measured, see below)
+#   min_us/max_us: never send a pulse outside these. Kept 50 us INSIDE the firmware hard limits
+#                (PULSE_MIN/PULSE_MAX in arm_controller.ino, 450-2500 on every joint, PR #8),
+#                which sit AT the servos' measured travel, so the firmware only trips on a bug.
 #
-# The 1500 us point is the window centre in config/arm.yaml (where the horn was put on).
+# MEASURED SERVO TRAVEL (Ishaan, Nov 13, bench, servo alone, no arm): every servo, MG996R 180
+# (J0-J2) and MG90S (J3-J4) alike, sweeps 180 deg between 450 and 2500 us
+#   -> 2050 us / 180 deg = 11.4 us/deg, mid-travel 1475 us.
+# (Supersedes the earlier single readings: MG996R 400-2450, MG90S 650-2600.)
+#
+# PROVISIONAL (Nov 13, Vyom + Claude): from the bench numbers above, not yet measured on the
+# assembled arm. Horns go on with each servo at 1475 us (its mid-travel, not 1500), so each
+# joint's window centre lands there. Replace every number at calibration (Nov 22-23).
+# MERGE ONLY AFTER PR #8 (firmware limits 450-2500): the test
+# test_calibration_range_sits_inside_the_firmware_limits enforces that order.
 
-center_us: 1500
+center_us: 1475   # every servo's measured mid-travel; a joint may override it below
 
 joints:
-  j0_base:     {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j1_shoulder: {direction: 1,  us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j2_elbow:    {direction: -1, us_per_deg: 5.6, min_us: 1000, max_us: 2000}
-  j3_wrist:    {direction: 1,  us_per_deg: 11,  min_us: 1000, max_us: 2000}  # MG90S bench Nov 10: 180 deg = 650-2600 us (10.8 us/deg), end stop ~500, >2600; widen min/max to ~550-2550 WITH the firmware limits
+  j0_base:     {center_us: 1475, direction: 1,  us_per_deg: 11.4, min_us: 500, max_us: 2450}  # MG996R
+  j1_shoulder: {center_us: 1475, direction: 1,  us_per_deg: 11.4, min_us: 500, max_us: 2450}  # MG996R
+  j2_elbow:    {center_us: 1475, direction: -1, us_per_deg: 11.4, min_us: 500, max_us: 2450}  # MG996R; four-bar -> servo sets the forearm's ABSOLUTE angle (theta1 + theta2), rework at calibration
+  j3_wrist:    {center_us: 1475, direction: 1,  us_per_deg: 11.4, min_us: 500, max_us: 2450}  # MG90S
 
-gripper:  # opening in mm -> pulse, straight line between two measured points
-  closed_us: 1200
-  open_us: 1800
+gripper:  # opening in mm -> pulse. Curled tilting fingers (D17, Nov 12): 26-40 mm = 7 mm of rack
+          # travel = 33.4 deg of servo turn = ~381 us at 11.4 us/deg, centred on 1475 until the
+          # horn is fitted and the real closed/open pulses are measured. Which end is "closed"
+          # depends on how the pinion goes on: swap the two if it closes the wrong way.
+          # Pairs with arm.yaml gripper closed_mm 26 / open_mm 40 (on cad/gripper).
+  closed_us: 1285
+  open_us: 1665
