@@ -11,10 +11,9 @@
       ch3 = J3 wrist     MG90S
       ch4 = J4 gripper   MG90S
 
-  MEASURED TRAVEL
-      MG996R (all four units, 2026-11-13): 400-2450 us for 180 deg, 11.4 us/deg
-      MG90S  (both units,     2026-11-10): 650-2600 us for 180 deg, 10.8 us/deg,
-                                           hard end stop near 500
+  MEASURED TRAVEL (2026-11-13 at Velocity, every servo)
+      450-2500 us for a full 180 deg, i.e. 11.4 us/deg, mid-travel 1475 us.
+      Firmware hard limits in arm_controller.ino are the same 450-2500.
 
   WIRING  (upload with servo power OFF)
       Nano 5V -> PCA VCC (logic only)      Nano GND -> PCA GND
@@ -31,7 +30,7 @@
       d          all channels limp. This is the panic button.
       w          slow sweep of the last channel used. Any key stops it.
       s          show each channel's pulse and allowed range
-      e          widen every channel to 400-2600 for hunting end stops
+      e          widen every channel to the full measured travel, 450-2500
 
   SAFETY
       Boots limp. Moves ease in 20 us steps rather than jumping, EXCEPT the first move after
@@ -50,12 +49,13 @@ Adafruit_PWMServoDriver pca(0x40);
 const uint8_t  NCH = 5;
 const uint8_t  CH[NCH] = {0, 1, 2, 3, 4};
 
-// Per channel, 50 us inside the measured travel. 'e' replaces these with 400/2600.
-uint16_t lo_limit[NCH] = { 450,  450,  450,  700,  700};
-uint16_t hi_limit[NCH] = {2400, 2400, 2400, 2550, 2550};
+// 50 us inside the measured 450-2500 travel, matching config/calibration.yaml.
+// 'e' widens these to the full measured travel for hunting end stops.
+uint16_t lo_limit[NCH] = { 500,  500,  500,  500,  500};
+uint16_t hi_limit[NCH] = {2450, 2450, 2450, 2450, 2450};
 
-// Each servo's own mid-travel, not a blanket 1500.
-const uint16_t CENTRE[NCH] = {1425, 1425, 1425, 1625, 1625};
+// Measured mid-travel, not the conventional 1500.
+const uint16_t CENTRE[NCH] = {1475, 1475, 1475, 1475, 1475};
 
 const char *LABEL[NCH] = {"J0 base", "J1 shoulder", "J2 elbow", "J3 wrist", "J4 gripper"};
 
@@ -163,8 +163,8 @@ void handle(char *s) {
   if (s[0] == 'w' && s[1] == '\0') { sweep(last_ch); return; }
   if (s[0] == 'c' && s[1] == '\0') { centre_all(); return; }
   if (s[0] == 'e' && s[1] == '\0') {
-    for (uint8_t i = 0; i < NCH; i++) { lo_limit[i] = 400; hi_limit[i] = 2600; }
-    Serial.println(F("range widened to 400-2600 on every channel."));
+    for (uint8_t i = 0; i < NCH; i++) { lo_limit[i] = 450; hi_limit[i] = 2500; }
+    Serial.println(F("range widened to the full measured travel, 450-2500."));
     Serial.println(F("Small steps, and press d the moment a servo buzzes."));
     return;
   }
