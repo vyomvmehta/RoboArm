@@ -33,8 +33,8 @@ joints:
     limits: [-110, 50]
 
 gripper:  # J4. Opening in mm is mapped to pulses in calibration.yaml once the gripper exists
-  open_mm: 40           # estimate, from Siddharth's gripper CAD
-  closed_mm: 0
+  open_mm: 40            # fully open = fingers flared 15 deg outward (rest)
+  closed_mm: 26          # curled fingertips (D17, Nov 12): below 26 the tips pass < 6 mm apart; racks stop here
 
 speed_limits_deg_per_s:  # start low (CLAUDE.md section 12); widen once the arm is proven
   j0_base: 45

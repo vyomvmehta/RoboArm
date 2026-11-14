@@ -56,7 +56,7 @@ def test_every_joint_limit_fits_inside_the_pulse_limits():
     cal = load_calibration(arm)
     for name in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist"):
         for deg in arm.raw["joints"][name]["limits"]:
-            values = [0, 60, -70, -30, 20]
+            values = [0, 60, -70, -30, arm.raw["gripper"]["open_mm"]]  # a valid opening, not a hard-coded mm
             values[("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist").index(name)] = deg
             cal.to_pulses(values)  # raises if outside min/max
 
