@@ -53,8 +53,8 @@ Each 3-pin output header is, from the board edge inwards: **GND (brown/black), V
 signal (orange/yellow)**. A plug on backwards does nothing at best and cooks an MG996R at worst.
 
 The **180° MG996Rs arrived 2026-11-12** and all four were tested on 2026-11-13 (s5). Bench work
-before that date used the **360° continuous-rotation** units, which is why those results looked
-wrong; see the note at the end of s5.
+before that date used the **360° continuous-rotation** units, which is why those earlier results
+looked wrong; see the note at the end of s5.
 
 ## 4. Power to the servo rail
 
@@ -89,37 +89,28 @@ accepted.
 
 | Layer | Where | Value |
 | --- | --- | --- |
-| Firmware hard limit | `arm_controller.ino`, `PULSE_MIN[]` / `PULSE_MAX[]` | 450-2500 us, all five joints |
-| Laptop working range | `config/calibration.yaml`, `min_us` / `max_us` | MG996R 450-2400, MG90S 550-2550 |
+| Firmware hard limit | `arm_controller.ino`, `PULSE_MIN[]` / `PULSE_MAX[]` | **450-2500 us**, all five joints |
+| Laptop working range | `config/calibration.yaml`, `min_us` / `max_us` | **500-2450 us**, all five joints |
 
 PROTOCOL.md s9 wants the firmware limits **wider** than the laptop's, so they only trip on a bug.
+50 us of margin each side.
 
 ### Measured travel
 
-- **MG996R 180°** (**MEASURED** 2026-11-13, Velocity, **all four units**): **400-2450 us** for a
-  full 180°, i.e. **11.4 us/°**. Consistent across every unit.
-- **MG90S** (**MEASURED** 2026-11-10, both units): **650-2600 us** for 180°, **10.8 us/°**, with
-  a hard end stop near 500 us.
+**MEASURED** 2026-11-13 at Velocity, **every servo** (four MG996R 180° and both MG90S):
 
-### Why the hard limits are uniform, and what that costs
+- **450-2500 us** for a full 180°
+- **11.4 us/°**
+- **mid-travel 1475 us**
 
-450-2500 was agreed in person on 2026-11-13 and applied to all five joints rather than per servo
-type. Two consequences worth knowing, because the firmware will not catch either:
-
-- **2500 is 50 us above the MG996R's 2450 end stop.** A bad frame can drive J0-J2 into their own
-  stop, which stalls and heats them. `calibration.yaml` must keep the MG996R max at **2400**.
-- **450 is below the MG90S's ~500 end stop.** Same problem on J3-J4, so keep their min at **550**.
-
-The hard limits are therefore a guard against wild values, not against reaching an end stop. The
-laptop range is what actually keeps the servos off their stops.
+Uniform across every unit, which is why the limits are uniform rather than per servo type.
 
 ### Centres are not 1500
 
-At 11.4 us/° the MG996R's true mid-travel is **1425 us**, and the MG90S's is **1625 us**.
-`config/arm.yaml`'s assembly note says to fit horns at 1500, which would leave every joint
-off-centre; Vyom has flagged that J0's +85° limit would land at 2469 us, past the 2450 stop.
-`calibration.yaml` currently has a single `center_us: 1500` and needs a per-joint value instead.
-**Agree this before assembly on Nov 19.**
+The measured mid-travel is **1475 us**, not the conventional 1500. `config/arm.yaml`'s assembly
+note says to fit horns at 1500, which would leave every joint 25 us (about 2°) off centre and
+eat into the travel at one end. `calibration.yaml` on `calib/provisional` uses 1475.
+**Settle the horn-fitting pulse before assembly on Nov 19.**
 
 ### The 1200 us "midpoint" was a 360° servo
 
@@ -139,7 +130,7 @@ stop point and "no resistance" was correct behaviour. Confirmed by D16's Nov 8 e
 
 - LM2596 output read with a multimeter during a stall (the Nov 1 task is still in review).
 - Stall torque for the MG996Rs, which decides 13/12 vs 15/14 at the Nov 15 review call.
-- Per-joint `center_us` in `calibration.yaml` (1425 MG996R, 1625 MG90S), and whether horns are
-  fitted at 1500 or at the true centre. Needed before assembly on Nov 19.
+- Whether horns are fitted at 1475 (measured centre) or 1500 (arm.yaml's assembly note).
+  Needed before assembly on Nov 19.
 - Whether the PD trigger stays at 9 V or goes to 15 V, and D16 updated either way.
 - Kill switch and 2200 uF capacitor installed.
