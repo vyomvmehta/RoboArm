@@ -2,6 +2,11 @@
 """
 roboarm_bench.py  --  drive the RoboArm v0 firmware from the laptop over USB.
 
+BENCH ONLY. On arming it streams the centre pose to every joint, which is fine for loose
+servos on a desk and wrong for an assembled arm: PROTOCOL.md s6 requires the arm to be
+resting in the park pose when you arm, and the first C frame after arming must be that
+park pose. Use arm/control.py for the real arm; it does this properly.
+
 Speaks docs/PROTOCOL.md to firmware/arm_controller. Opens the port, waits for the
 boot banner, arms, then streams C frames at 30 Hz so the 300 ms watchdog never
 fires. Type commands to move joints.
@@ -25,9 +30,20 @@ import serial.tools.list_ports
 BAUD = 115200
 NJOINTS = 5
 JOINT_NAMES = ["j0_base", "j1_shoulder", "j2_elbow", "j3_wrist", "j4_gripper"]
-PULSE_MIN, PULSE_MAX = 1000, 2000      # firmware hard limits (PROTOCOL.md s9)
-CENTRE_US = 1500                        # spec default; override with --centre
-SPAN_US = 300                           # how far either side of centre to allow
+CENTRE_US = 1500        # override with --centre (MG996R measure at 1425, MG90S at 1625)
+SPAN_US = 300           # how far either side of centre to allow
+
+
+def firmware_hard_limits():
+    """Read PULSE_MIN/PULSE_MAX out of the .ino, the same way arm/comms/link.py does, so
+    this script can never disagree with the firmware it is driving. Needs to run from the
+    repo root."""
+    try:
+        from arm.comms.link import firmware_limits
+        return firmware_limits()
+    except Exception as e:
+        sys.exit(f"could not read the firmware limits ({e}).\n"
+                 f"Run this from the repo root: python tools/roboarm_bench.py")
 STREAM_HZ = 30                          # must stay well inside the 300 ms watchdog
 BANNER_TIMEOUT_S = 5.0                  # PROTOCOL.md s7 says wait up to 3 s; be generous
 
@@ -116,12 +132,13 @@ def autodetect() -> str:
 
 
 class Arm:
-    def __init__(self, ser, centre=CENTRE_US, span=SPAN_US):
+    def __init__(self, ser, centre=CENTRE_US, span=SPAN_US, limits=None):
         self.ser = ser
         self.centre = centre
-        # Never allow past the firmware's own limits: it would reject the frame (error 3).
-        self.lo = max(PULSE_MIN, centre - span)
-        self.hi = min(PULSE_MAX, centre + span)
+        fw_min, fw_max = limits if limits else firmware_hard_limits()
+        # Per joint, and never past the firmware's own limits: it rejects those (error 3).
+        self.lo = [max(fw_min[j], centre - span) for j in range(NJOINTS)]
+        self.hi = [min(fw_max[j], centre + span) for j in range(NJOINTS)]
         self.seq = 0
         self.state = "?"
         self.target = [centre] * NJOINTS
@@ -221,16 +238,17 @@ class Arm:
         if not 0 <= idx < NJOINTS:
             print(f"  joint must be 0-{NJOINTS - 1}")
             return
-        if not self.lo <= us <= self.hi:
-            print(f"  {us} us is outside the safe band {self.lo}-{self.hi}")
+        if not self.lo[idx] <= us <= self.hi[idx]:
+            print(f"  {us} us is outside ch{idx}'s band {self.lo[idx]}-{self.hi[idx]}")
             return
         with self._lock:
             self.target[idx] = us
         print(f"  {JOINT_NAMES[idx]} -> {us} us")
 
     def set_all(self, us: int):
-        if not self.lo <= us <= self.hi:
-            print(f"  {us} us is outside the safe band {self.lo}-{self.hi}")
+        bad = [j for j in range(NJOINTS) if not self.lo[j] <= us <= self.hi[j]]
+        if bad:
+            print(f"  {us} us is outside the band on joint(s) {bad}")
             return
         with self._lock:
             self.target = [us] * NJOINTS
@@ -284,12 +302,12 @@ def shell(arm: Arm):
                 arm.set_joint(int(parts[1]), int(parts[2]))
             elif cmd == "pose" and len(parts) == 1 + NJOINTS:
                 vals = [int(v) for v in parts[1:]]
-                if all(arm.lo <= v <= arm.hi for v in vals):
+                if all(arm.lo[j] <= v <= arm.hi[j] for j, v in enumerate(vals)):
                     with arm._lock:
                         arm.target = vals
                     print(f"  pose -> {vals}")
                 else:
-                    print(f"  every value must be {arm.lo}-{arm.hi}")
+                    print(f"  per-joint bands: {list(zip(arm.lo, arm.hi))}")
             else:
                 print(HELP)
         except ValueError:
@@ -309,7 +327,8 @@ def main():
 
     ser = open_port(args.port, args.baud)
     arm = Arm(ser, centre=args.centre, span=args.span)
-    print(f"centre {arm.centre} us, safe band {arm.lo}-{arm.hi} us")
+    print(f"centre {arm.centre} us; per-joint bands {list(zip(arm.lo, arm.hi))}")
+    print("BENCH ONLY: arming streams the centre pose, not the park pose.")
     arm.start()
 
     try:
