@@ -3,8 +3,8 @@
 Inputs come from two files:
   config/arm.yaml          window: [low, high] for each joint (the servo's 180 degrees, in joint angles)
   config/calibration.yaml  center_us, and per joint: direction, us_per_deg, min_us, max_us
-                           (a joint's own center_us, if given, overrides the top-level one:
-                           MG996R and MG90S have different mid-travel pulses, Nov 13)
+                           (a joint's own center_us, if given, overrides the top-level one,
+                           so one servo can be re-centred at calibration without touching the rest)
 
 joint_to_pulse: written by Vyom (step 3, 2026-11-08).
 Run the tests:  py -m pytest tests/test_calibration.py -q

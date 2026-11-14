@@ -61,8 +61,9 @@ def test_every_joint_limit_fits_inside_the_pulse_limits():
             cal.to_pulses(values)  # raises if outside min/max
 
 
-def test_a_joints_own_centre_overrides_the_global_one():
-    # MG996R horns go on at 1425 us, MG90S at 1625 (Nov 13): the window centre must map there.
+def test_each_joints_window_centre_maps_to_its_centre_pulse():
+    # Horns go on at each servo's mid-travel (1475 us for every servo, Nov 13), so the window
+    # centre must map there. A joint's own center_us, if set, wins over the top-level one.
     from arm.calibration import load_calibration
     from arm.config import load_arm
     arm = load_arm()
