@@ -59,3 +59,33 @@ def test_every_joint_limit_fits_inside_the_pulse_limits():
             values = [0, 60, -70, -30, 20]
             values[("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist").index(name)] = deg
             cal.to_pulses(values)  # raises if outside min/max
+
+
+def test_a_joints_own_centre_overrides_the_global_one():
+    # MG996R horns go on at 1425 us, MG90S at 1625 (Nov 13): the window centre must map there.
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    arm = load_arm()
+    cal = load_calibration(arm)
+    centres = [sum(arm.raw["joints"][n]["window"]) / 2
+               for n in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")]
+    pulses = cal.to_pulses(centres + [arm.raw["gripper"]["closed_mm"]])
+    expected = [cal.cal["joints"][n].get("center_us", cal.cal["center_us"])
+                for n in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")]
+    assert pulses[:4] == expected
+
+
+def test_calibration_range_sits_inside_the_firmware_limits():
+    # The laptop's min/max must sit inside the Nano's hard limits, or a legal slider position
+    # comes back as error 3. Red until PR #8's per-joint limits are merged (merge order guard).
+    from arm.calibration import load_calibration
+    from arm.comms.link import firmware_limits
+    from arm.config import load_arm
+    cal = load_calibration(load_arm())
+    lo, hi = firmware_limits()
+    for i, name in enumerate(("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")):
+        j = cal.cal["joints"][name]
+        assert lo[i] <= j["min_us"] and j["max_us"] <= hi[i], (name, j, lo[i], hi[i])
+    g = cal.cal["gripper"]
+    for us in (g["closed_us"], g["open_us"]):
+        assert lo[4] <= us <= hi[4], ("gripper", us, lo[4], hi[4])
