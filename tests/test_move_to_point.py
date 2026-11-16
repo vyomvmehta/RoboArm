@@ -115,3 +115,16 @@ def test_a_heartbeat_crash_disarms_and_reports_instead_of_dying_silently(arm):
     c, nano = asyncio.run(go())
     assert c.armed is False
     assert "simulated port failure" in c.status()["fault"]
+
+
+def test_four_bar_elbow_servo_never_exceeds_the_j2_cap(arm):
+    # PR #12 follow-up: shoulder up + elbow bend the same way = elbow SERVO moves the sum.
+    c = Controller(FakeNano(), load_calibration(arm))
+    cur = [0, 30, -100, -30, 30]
+    c.target_values, c.goal_values = list(cur), [0, 90, -40, -30, 30]   # both +60 deg
+    for _ in range(200):
+        before = list(c.target_values)
+        c._advance()
+        servo = (c.target_values[1] - before[1]) + (c.target_values[2] - before[2])
+        assert abs(servo) <= c.max_step[2] + 1e-9
+    assert c.target_values == pytest.approx(c.goal_values)

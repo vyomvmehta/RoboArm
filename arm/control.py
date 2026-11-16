@@ -106,6 +106,7 @@ class Controller:
         if self.goal_values is None or self.target_values == self.goal_values:
             return
         nxt = step_toward(self.target_values, self.goal_values, self.max_step)
+        nxt = self._cap_four_bar_elbow(self.target_values, nxt)
         try:
             us = self.cal.to_pulses(nxt)
         except ValueError as e:        # only a ramp bug gets here: stop where we are
@@ -113,6 +114,23 @@ class Controller:
             self.goal_values = list(self.target_values)
             return
         self.target_values, self.target_us = nxt, us
+
+    def _cap_four_bar_elbow(self, cur: list[float], nxt: list[float]) -> list[float]:
+        """Four-bar (D19): the elbow SERVO turns by d(theta1) + d(theta2), not d(theta2).
+
+        step_toward caps theta1 and theta2 separately, so together the elbow servo could be
+        asked for twice its speed, more than the firmware's own J2 cap (PR #12) allows; the
+        firmware would then lag and bend the path. If that sum is over J2's step, shrink the
+        WHOLE step by the same fraction: every joint keeps its share, so they still arrive
+        together, just a little later.
+        """
+        if "four_bar_window" not in self.cal.cal["joints"]["j2_elbow"]:
+            return nxt
+        servo_move = abs((nxt[1] - cur[1]) + (nxt[2] - cur[2]))
+        if servo_move <= self.max_step[2] + 1e-9:
+            return nxt
+        f = self.max_step[2] / servo_move
+        return [c + (n - c) * f for c, n in zip(cur, nxt)]
 
     # ------------------------------------------------------------------ heartbeat
     async def _heartbeat(self):
