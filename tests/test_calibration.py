@@ -90,3 +90,38 @@ def test_calibration_range_sits_inside_the_firmware_limits():
     g = cal.cal["gripper"]
     for us in (g["closed_us"], g["open_us"]):
         assert lo[4] <= us <= hi[4], ("gripper", us, lo[4], hi[4])
+
+
+# ---------------------------------------------------------------- four-bar elbow (D19, Nov 15)
+def _cal():
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    return load_calibration(load_arm())
+
+
+def test_four_bar_elbow_pulse_follows_the_forearms_absolute_angle():
+    cal = _cal()
+    # same absolute forearm angle (-10 deg) from two different shoulder angles -> same elbow pulse
+    a = cal.to_pulses([0, 60, -70, -30, 30])
+    b = cal.to_pulses([0, 80, -90, -30, 30])
+    assert a[2] == b[2] == 1475          # -10 deg is the four_bar_window centre
+
+
+def test_moving_only_the_shoulder_changes_the_elbow_pulse():
+    cal = _cal()
+    a = cal.to_pulses([0, 60, -70, -30, 30])
+    b = cal.to_pulses([0, 70, -70, -30, 30])   # theta2 unchanged, forearm now 10 deg higher
+    assert a[2] - b[2] == round(11.3889 * 10)  # direction -1: higher forearm = shorter pulse
+
+
+def test_four_bar_still_enforces_the_bend_limit():
+    import pytest
+    with pytest.raises(ValueError, match="j2_elbow"):
+        _cal().to_pulses([0, 90, -170, -30, 30])   # bend past arm.yaml's -160
+
+
+def test_park_pose_is_valid_with_the_four_bar():
+    from arm.config import load_arm
+    p = load_arm().park
+    import math
+    _cal().to_pulses([math.degrees(v) for v in (p.theta0, p.theta1, p.theta2, p.theta3)] + [30])

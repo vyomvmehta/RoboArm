@@ -27,7 +27,14 @@ center_us: 1475   # every servo's measured mid-travel; a joint may override it b
 joints:
   j0_base:     {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R
   j1_shoulder: {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R
-  j2_elbow:    {center_us: 1475, direction: -1, us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R; four-bar -> servo sets the forearm's ABSOLUTE angle (theta1 + theta2), rework at calibration
+  j2_elbow:    {center_us: 1475, direction: -1, us_per_deg: 11.3889, min_us: 500, max_us: 2450,  # MG996R
+                four_bar_window: [-100, 80]}
+  # FOUR-BAR (D19, Nov 15): the elbow servo sits at the shoulder and, through the parallel rod,
+  # sets the forearm's ABSOLUTE angle above horizontal = theta1 + theta2, not the bend theta2.
+  # four_bar_window is that absolute angle's 180 deg servo window (replaces arm.yaml's
+  # j2 window for the pulse maths; arm.yaml's window still limits the bend in IK).
+  # PROVISIONAL: centre -10 deg = home pose (60 - 70); park is -40. Fit the horn so 1475 us
+  # puts the forearm 10 deg below horizontal, then re-measure at calibration.
   j3_wrist:    {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG90S
 
 gripper:  # opening in mm -> pulse. Curled tilting fingers (D17, Nov 12): 26-40 mm = 7 mm of rack
