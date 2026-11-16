@@ -26,6 +26,7 @@ from arm.calibration import load_calibration
 from arm.comms.link import Link, open_link
 from arm.config import JOINTS, load_arm
 from arm.control import Controller
+from arm.targets import point_to_joints
 
 HERE = Path(__file__).parent
 COMMS = yaml.safe_load((HERE.parents[1] / "config" / "comms.yaml").read_text(encoding="utf-8"))
@@ -52,7 +53,9 @@ def create_app(link: Link) -> FastAPI:
         g = cfg.raw["gripper"]
         sliders.append({"name": "j4_gripper_mm", "min": g["closed_mm"], "max": g["open_mm"],
                         "start": park[4]})
-        return {"sliders": sliders}
+        h = cfg.raw["poses"]["home"]
+        return {"sliders": sliders, "links": cfg.raw["links"], "workspace": cfg.workspace,
+                "home": h, "base_limits": joints["j0_base"]["limits"]}
 
     @app.websocket("/ws")
     async def ws(socket: WebSocket):
@@ -86,6 +89,20 @@ def create_app(link: Link) -> FastAPI:
                     why = controller.set_target(msg["deg"])
                     if why:
                         await send({"type": "error", "msg": "NOT SENT: " + why})
+                elif kind == "point":          # point-and-go: IK on the laptop, then ramp
+                    try:
+                        joints = point_to_joints(cfg, float(msg["x"]), float(msg["y"]),
+                                                 float(msg["z"]), float(msg["pitch"]))
+                    except (ValueError, KeyError, TypeError) as e:
+                        await send({"type": "error", "msg": f"NOT SENT: {e}"})
+                        continue
+                    goal = controller.goal_values or controller.park_values()
+                    values = joints + [goal[4]]   # keep the gripper as it is
+                    why = controller.set_target(values)
+                    if why:
+                        await send({"type": "error", "msg": "NOT SENT: " + why})
+                    else:                     # sliders show where the arm is heading
+                        await send({"type": "pose", "values": values, "point": True})
         except WebSocketDisconnect:
             pass
         finally:

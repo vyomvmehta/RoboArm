@@ -12,14 +12,23 @@ Every input (web sliders now, gestures in V2) only sets a TARGET here. This clas
   3. The dead-man rule: if the controlling browser disconnects, disarm.
   4. The "clear no": a target that calibration rejects is NOT sent; the arm keeps the
      previous target and the caller gets the reason.
+  5. The ramp (2026-11-15): inputs set a GOAL; each heartbeat tick moves the sent TARGET one
+     step toward it (arm/motion.py step_toward) at the speeds in config/arm.yaml, so a big
+     request becomes a smooth move, not a jump. Joint limits are a box, so every pose on
+     the way between two valid poses is valid too.
 """
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 
 from arm.calibration import Calibration
 from arm.comms.link import Link
+from arm.config import JOINTS
+from arm.motion import step_toward
+
+log = logging.getLogger(__name__)
 
 
 class Controller:
@@ -30,7 +39,13 @@ class Controller:
         self.armed = False
         self.target_us: list[int] | None = None   # what the heartbeat sends
         self.target_values: list[float] | None = None
+        self.goal_values: list[float] | None = None  # where the ramp is heading
+        arm = calibration.arm
+        # Most each joint may move in one tick: speed x tick time (degrees, gripper mm).
+        self.max_step = ([arm.speed_limits_deg_per_s[n] * self.period_s for n in JOINTS]
+                         + [arm.raw["gripper_speed_mm_per_s"] * self.period_s])
         self._task: asyncio.Task | None = None
+        self.fault: str | None = None   # why the heartbeat stopped itself; shown on the page
 
     def park_values(self) -> list[float]:
         """Park pose as [j0..j3 degrees, gripper mm], from config/arm.yaml."""
@@ -55,6 +70,8 @@ class Controller:
             return f"park pose is outside the calibration limits: {e}"
         # Set the target BEFORE arming, so the very first C the heartbeat sends is park.
         self.target_values, self.target_us = park, park_us
+        self.goal_values = list(park)
+        self.fault = None
         self.link.send("A")
         self.armed = True
         self._task = asyncio.create_task(self._heartbeat())
@@ -71,15 +88,31 @@ class Controller:
 
     # ------------------------------------------------------------------ targets
     def set_target(self, values: list[float]) -> str | None:
-        """[j0..j3 degrees, gripper mm]. Returns None if accepted, else why it was rejected."""
+        """[j0..j3 degrees, gripper mm] -> new GOAL. Returns None if accepted, else why not.
+
+        The arm doesn't jump there: the heartbeat ramps the sent target toward it.
+        """
         if not self.armed:
             return "not armed: press Arm first"
         try:
-            us = self.cal.to_pulses(values)
+            self.cal.to_pulses(values)  # validate the END pose; the poses on the way are inside the same box
         except ValueError as e:
-            return str(e)              # rejected: the heartbeat keeps sending the OLD target
-        self.target_values, self.target_us = list(values), us
+            return str(e)              # rejected: the goal (and the ramp) stays as it was
+        self.goal_values = list(values)
         return None
+
+    def _advance(self) -> None:
+        """One ramp step: move the sent target toward the goal."""
+        if self.goal_values is None or self.target_values == self.goal_values:
+            return
+        nxt = step_toward(self.target_values, self.goal_values, self.max_step)
+        try:
+            us = self.cal.to_pulses(nxt)
+        except ValueError as e:        # only a ramp bug gets here: stop where we are
+            log.warning("ramp produced an invalid pose, holding: %s", e)
+            self.goal_values = list(self.target_values)
+            return
+        self.target_values, self.target_us = nxt, us
 
     # ------------------------------------------------------------------ heartbeat
     async def _heartbeat(self):
@@ -90,6 +123,7 @@ class Controller:
                 if not self.link.connected or self.link.state == "FAULT":
                     self.armed = False     # nothing safe to do but stop sending
                     return
+                self._advance()
                 self.link.send("C", *self.target_us)
                 # Schedule against a fixed clock, not "sleep 33 ms after sending": that way a
                 # slow send doesn't make every later frame late too (no drift).
@@ -97,6 +131,21 @@ class Controller:
                 await asyncio.sleep(max(0.0, next_tick - loop.time()))
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            # Anything else (a ramp bug, the port dying mid-write) must NOT leave the page saying
+            # ARMED while no C frames go out (PR #11 review). Stop, try to send D, and say why.
+            log.exception("heartbeat stopped")
+            self.fault = f"heartbeat stopped: {type(e).__name__}: {e}"
+            self.armed = False
+            self._task = None
+            try:
+                if self.link.connected:
+                    self.link.send("D")
+            except Exception:
+                log.exception("could not send D after the heartbeat stopped")
 
     def status(self) -> dict:
-        return {**self.link.status(), "armed": self.armed, "target_us": self.target_us}
+        return {**self.link.status(), "armed": self.armed, "fault": self.fault,
+                "target_us": self.target_us,
+                "target_values": self.target_values, "goal_values": self.goal_values,
+                "moving": self.goal_values is not None and self.target_values != self.goal_values}

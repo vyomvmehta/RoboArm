@@ -17,6 +17,15 @@
   #state.FAULT,#state.DISCONNECTED{background:#c0392b;color:#fff}
   #info,#msg{font-family:monospace;font-size:.85rem;color:#5d6560;white-space:pre-wrap}
   #msg.err{color:#c0392b}
+  h2{font-size:1.05rem;margin:22px 0 6px}
+  .pt{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:8px;align-items:end}
+  .pt label{font-size:.8rem;color:#5d6560;display:flex;flex-direction:column;gap:2px}
+  .pt input{font-size:1rem;padding:8px;border:1px solid #c7cdc8;border-radius:6px;width:100%;box-sizing:border-box}
+  #go{background:#1f5f99;color:#fff}
+  .views{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .views figure{margin:0} .views figcaption{font-size:.8rem;color:#5d6560}
+  canvas{width:100%;height:auto;background:#fff;border:1px solid #c7cdc8;border-radius:8px}
+  #top{cursor:crosshair}
 </style></head>
 <body>
 <h1>RoboArm</h1>
@@ -29,6 +38,21 @@
 <div id="sliders"></div>
 <div id="msg"></div>
 
+<h2>Move to point</h2>
+<div class="pt">
+  <label>x mm<input id="px" type="number" step="5"></label>
+  <label>y mm<input id="py" type="number" step="5"></label>
+  <label>z mm<input id="pz" type="number" step="5"></label>
+  <label>pitch °<input id="pp" type="number" step="5"></label>
+  <button id="go" disabled>Go</button>
+</div>
+<div class="views">
+  <figure><canvas id="top" width="300" height="300"></canvas>
+    <figcaption>Top view, forward = up. Tap to set x, y.</figcaption></figure>
+  <figure><canvas id="side" width="300" height="300"></canvas>
+    <figcaption>Side view. Solid = being sent now, faint + ring = goal. Dashed = workspace.</figcaption></figure>
+</div>
+
 <script>
 // ---------- connection ----------
 const sock = new WebSocket(`ws://${location.host}/ws`);
@@ -40,6 +64,7 @@ function setArmed(a) {             // sliders only work while armed
   armed = a;
   $("arm").disabled = a; $("disarm").disabled = !a;
   document.querySelectorAll("input[type=range]").forEach(s => s.disabled = !a);
+  $("go").disabled = !a;
 }
 
 sock.onclose = () => { $("state").textContent = "disconnected: reload"; $("state").className = "DISCONNECTED"; setArmed(false); };
@@ -51,14 +76,22 @@ sock.onmessage = (e) => {
     $("info").textContent =
       `firmware ${m.firmware || "?"} · round trip ${m.rtt_ms ?? "-"} ms` +
       (m.target_us ? `\nsending (us): ${m.target_us.join(", ")}` : "") +
-      (m.error ? `\nlast Nano error: ${m.error}` : "");
-  } else if (m.type === "pose") {   // armed: the server is sending PARK, show it on the sliders
-    setSliders(m.values); say("armed at the park pose");
+      (m.error ? `\nlast Nano error: ${m.error}` : "") +
+      (m.fault ? `\nDISARMED BY LAPTOP: ${m.fault}` : "") +
+      (m.moving ? "\nmoving..." : "");
+    draw(m.target_values, m.goal_values);
+  } else if (m.type === "pose") {   // the sliders show where the arm is heading (park, or a point's IK)
+    setSliders(m.values); say(m.point ? "point accepted: ramping there" : "armed at the park pose");
   } else if (m.type === "error") {
     say(m.msg, true);
   } else if (m.type === "busy") {
     say("someone else is controlling the arm from another browser", true);
   }
+};
+$("go").onclick = () => {
+  const v = ["px", "py", "pz", "pp"].map(id => Number($(id).value));
+  if (v.some(Number.isNaN)) return say("fill in x, y, z and pitch", true);
+  sock.send(JSON.stringify({type: "point", x: v[0], y: v[1], z: v[2], pitch: v[3]}));
 };
 $("arm").onclick = () => sock.send(JSON.stringify({type: "arm"}));
 $("disarm").onclick = () => sock.send(JSON.stringify({type: "disarm"}));
@@ -81,7 +114,71 @@ function setSliders(values) {
   values.forEach((v, i) => { latest[i] = v; inputs[i].value = v; inputs[i].nextElementSibling.textContent = Math.round(v); });
   dirty = false;
 }
-fetch("/config").then(r => r.json()).then(({sliders}) => {
+// ---------- drawing: forward kinematics of what is being sent (same maths as arm/kinematics) ----------
+let geo = null;                     // links, workspace, base limits from /config
+const rad = (d) => d * Math.PI / 180;
+function fk(v) {                    // [j0..j3 deg] -> base, shoulder, elbow, wrist, tip in the arm's plane (r, z)
+  const L = geo.links, a1 = rad(v[1]), a12 = a1 + rad(v[2]), phi = a12 + rad(v[3]);
+  const s = [L.shoulder_offset, L.shoulder_height];
+  const e = [s[0] + L.l1 * Math.cos(a1), s[1] + L.l1 * Math.sin(a1)];
+  const w = [e[0] + L.l2 * Math.cos(a12), e[1] + L.l2 * Math.sin(a12)];
+  const t = [w[0] + L.l3 * Math.cos(phi), w[1] + L.l3 * Math.sin(phi)];
+  return [[0, 0], s, e, w, t];
+}
+const reach = () => { const L = geo.links; return L.shoulder_offset + L.l1 + L.l2 + L.l3; };
+const kTop = () => 250 / reach();   // px per mm: full reach fits from the base to the top edge
+const kSide = () => 260 / reach();
+const topXY = (x, y) => [150 - y * kTop(), 275 - x * kTop()];   // robot x = up, robot y = left
+const sideXY = (r, z) => [20 + r * kSide(), 280 - z * kSide()]; // r right, z up
+
+function draw(target, goal) {
+  if (!geo) return;
+  const ws = geo.workspace, [bl, bh] = geo.base_limits;
+  // ---- top view ----
+  let c = $("top").getContext("2d");
+  c.clearRect(0, 0, 300, 300);
+  c.fillStyle = "rgba(44,130,86,.14)"; c.beginPath();     // allowed band: r_min..r_max over the base's range
+  const a0 = -Math.PI / 2 - rad(bh), a1 = -Math.PI / 2 - rad(bl);
+  c.arc(150, 275, ws.r_max * kTop(), a0, a1); c.arc(150, 275, ws.r_min * kTop(), a1, a0, true); c.fill();
+  c.fillStyle = "#5d6560"; c.beginPath(); c.arc(150, 275, 6, 0, 2 * Math.PI); c.fill();
+  const plan = (v, style, width) => {            // from above, the arm is a line out to the tip's radius
+    const r = fk(v)[4][0], th = rad(v[0]);
+    const p = topXY(r * Math.cos(th), r * Math.sin(th));
+    c.strokeStyle = style; c.lineWidth = width; c.beginPath(); c.moveTo(150, 275); c.lineTo(...p); c.stroke();
+    return p;
+  };
+  if (goal) { const p = plan(goal, "rgba(31,95,153,.3)", 2); c.strokeStyle = "#1f5f99"; c.lineWidth = 2; c.beginPath(); c.arc(...p, 7, 0, 2 * Math.PI); c.stroke(); }
+  if (target) { const p = plan(target, "#1f5f99", 4); c.fillStyle = "#1f5f99"; c.beginPath(); c.arc(...p, 4, 0, 2 * Math.PI); c.fill(); }
+  // ---- side view ----
+  c = $("side").getContext("2d");
+  c.clearRect(0, 0, 300, 300);
+  c.strokeStyle = "#5d6560"; c.lineWidth = 1; c.beginPath(); c.moveTo(0, 280); c.lineTo(300, 280); c.stroke();  // table
+  c.setLineDash([4, 4]); c.strokeStyle = "rgba(44,130,86,.8)";                                                   // workspace box
+  const [x0, y0] = sideXY(ws.r_min, ws.z_max), [x1, y1] = sideXY(ws.r_max, ws.z_min);
+  c.strokeRect(x0, y0, x1 - x0, y1 - y0); c.setLineDash([]);
+  const stick = (v, style, width) => {
+    const pts = fk(v).map(([r, z]) => sideXY(r, z));
+    c.strokeStyle = style; c.lineWidth = width; c.beginPath(); c.moveTo(...pts[0]);
+    pts.slice(1).forEach(p => c.lineTo(...p)); c.stroke();
+    c.fillStyle = style; pts.slice(1, 4).forEach(p => { c.beginPath(); c.arc(...p, width + 1, 0, 2 * Math.PI); c.fill(); });
+    return pts[4];
+  };
+  if (goal) { const p = stick(goal, "rgba(31,95,153,.25)", 2); c.strokeStyle = "#1f5f99"; c.lineWidth = 2; c.beginPath(); c.arc(...p, 7, 0, 2 * Math.PI); c.stroke(); }
+  if (target) stick(target, "#1f5f99", 3);
+}
+
+$("top").addEventListener("click", (e) => {     // tap = set x, y; z and pitch stay as typed
+  if (!geo) return;
+  const box = $("top").getBoundingClientRect();
+  const cx = (e.clientX - box.left) * 300 / box.width, cy = (e.clientY - box.top) * 300 / box.height;
+  $("px").value = Math.round((275 - cy) / kTop()); $("py").value = Math.round((150 - cx) / kTop());
+  say("x, y set from the top view: press Go");
+});
+
+fetch("/config").then(r => r.json()).then(({sliders, links, workspace, home, base_limits}) => {
+  geo = {links, workspace, base_limits};
+  $("px").value = home.x; $("py").value = home.y; $("pz").value = home.z; $("pp").value = home.pitch;
+  draw(null, null);
   sliders.forEach((s, i) => {
     latest[i] = s.start;
     const row = document.createElement("div");
