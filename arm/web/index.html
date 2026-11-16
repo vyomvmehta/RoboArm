@@ -77,6 +77,7 @@ sock.onmessage = (e) => {
       `firmware ${m.firmware || "?"} · round trip ${m.rtt_ms ?? "-"} ms` +
       (m.target_us ? `\nsending (us): ${m.target_us.join(", ")}` : "") +
       (m.error ? `\nlast Nano error: ${m.error}` : "") +
+      (m.fault ? `\nDISARMED BY LAPTOP: ${m.fault}` : "") +
       (m.moving ? "\nmoving..." : "");
     draw(m.target_values, m.goal_values);
   } else if (m.type === "pose") {   // the sliders show where the arm is heading (park, or a point's IK)

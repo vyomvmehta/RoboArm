@@ -99,3 +99,19 @@ def test_point_over_the_websocket_is_accepted_or_explained(arm):
     replies = [m for m in got if m["type"] in ("pose", "error")]
     assert replies[1]["type"] == "pose" and replies[1]["point"]
     assert replies[2]["type"] == "error" and "NOT SENT" in replies[2]["msg"]
+
+
+def test_a_heartbeat_crash_disarms_and_reports_instead_of_dying_silently(arm):
+    # PR #11 review: an exception in the heartbeat used to kill the task with armed still True.
+    async def go():
+        nano = FakeNano()
+        c = Controller(nano, load_calibration(arm))
+        await c.arm()
+        def boom():
+            raise RuntimeError("simulated port failure")
+        c._advance = boom
+        await asyncio.sleep(0.15)
+        return c, nano
+    c, nano = asyncio.run(go())
+    assert c.armed is False
+    assert "simulated port failure" in c.status()["fault"]

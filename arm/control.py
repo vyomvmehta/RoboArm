@@ -20,12 +20,15 @@ Every input (web sliders now, gestures in V2) only sets a TARGET here. This clas
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 
 from arm.calibration import Calibration
 from arm.comms.link import Link
 from arm.config import JOINTS
 from arm.motion import step_toward
+
+log = logging.getLogger(__name__)
 
 
 class Controller:
@@ -42,6 +45,7 @@ class Controller:
         self.max_step = ([arm.speed_limits_deg_per_s[n] * self.period_s for n in JOINTS]
                          + [arm.raw["gripper_speed_mm_per_s"] * self.period_s])
         self._task: asyncio.Task | None = None
+        self.fault: str | None = None   # why the heartbeat stopped itself; shown on the page
 
     def park_values(self) -> list[float]:
         """Park pose as [j0..j3 degrees, gripper mm], from config/arm.yaml."""
@@ -67,6 +71,7 @@ class Controller:
         # Set the target BEFORE arming, so the very first C the heartbeat sends is park.
         self.target_values, self.target_us = park, park_us
         self.goal_values = list(park)
+        self.fault = None
         self.link.send("A")
         self.armed = True
         self._task = asyncio.create_task(self._heartbeat())
@@ -104,7 +109,7 @@ class Controller:
         try:
             us = self.cal.to_pulses(nxt)
         except ValueError as e:        # only a ramp bug gets here: stop where we are
-            print("ramp produced an invalid pose, holding:", e)
+            log.warning("ramp produced an invalid pose, holding: %s", e)
             self.goal_values = list(self.target_values)
             return
         self.target_values, self.target_us = nxt, us
@@ -126,8 +131,21 @@ class Controller:
                 await asyncio.sleep(max(0.0, next_tick - loop.time()))
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            # Anything else (a ramp bug, the port dying mid-write) must NOT leave the page saying
+            # ARMED while no C frames go out (PR #11 review). Stop, try to send D, and say why.
+            log.exception("heartbeat stopped")
+            self.fault = f"heartbeat stopped: {type(e).__name__}: {e}"
+            self.armed = False
+            self._task = None
+            try:
+                if self.link.connected:
+                    self.link.send("D")
+            except Exception:
+                log.exception("could not send D after the heartbeat stopped")
 
     def status(self) -> dict:
-        return {**self.link.status(), "armed": self.armed, "target_us": self.target_us,
+        return {**self.link.status(), "armed": self.armed, "fault": self.fault,
+                "target_us": self.target_us,
                 "target_values": self.target_values, "goal_values": self.goal_values,
                 "moving": self.goal_values is not None and self.target_values != self.goal_values}

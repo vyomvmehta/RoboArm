@@ -44,3 +44,14 @@ def test_current_is_not_modified():
     current = [0, 0, 0, 0, 30]
     step_toward(current, [90, 90, 90, 90, 40], STEP)
     assert current == [0, 0, 0, 0, 30]
+
+
+def test_a_zero_speed_freezes_that_joint_instead_of_crashing():
+    # PR #11 review (Ishaan): a 0 in arm.yaml used to raise ZeroDivisionError.
+    new = step_toward([0, 0, 0, 0, 30], [10, 5, 0, 0, 30], [0, 1, 1, 1, 1])
+    assert new[0] == 0                 # frozen joint stays put
+    assert new[1] == 1                 # the others still move at their limit
+
+
+def test_all_joints_frozen_returns_current():
+    assert step_toward([1, 2, 3, 4, 30], [9, 9, 9, 9, 40], [0] * 5) == [1, 2, 3, 4, 30]

@@ -36,8 +36,14 @@ def step_toward(current: list[float], goal: list[float], max_step: list[float]) 
     Recomputing every tick keeps them in step: after a tick every joint has covered the same
     fraction of its trip, so the remaining trips keep the same proportions.
     """
+    # 0. A speed of 0 (or less) means "frozen": that joint stays where it is and is left out of
+    #    the timing. Without this, a 0 in arm.yaml divided by zero (PR #11 review, Ishaan).
+    moving = [s > 0 for s in max_step]
+    goal = [g if m else c for c, g, m in zip(current, goal, moving)]
+
     # 1. How many ticks the whole move needs = the slowest joint's trip at its own top speed.
-    ticks = max(abs(g - c) / s for c, g, s in zip(current, goal, max_step))
+    ticks = max((abs(g - c) / s for c, g, s, m in zip(current, goal, max_step, moving) if m),
+                default=0)
 
     # 2. Within one tick of the goal (or already there): land exactly on it, no overshoot.
     if ticks <= 1:
