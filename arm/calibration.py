@@ -60,11 +60,20 @@ class Calibration:
         if len(values) != 5:
             raise ValueError(f"expected 5 values, got {len(values)}")
         pulses = []
-        for name, deg in zip(JOINTS, values[:4]):
+        for i, (name, deg) in enumerate(zip(JOINTS, values[:4])):
             j = self.cal["joints"][name]
+            window = self.arm.raw["joints"][name]["window"]
+            if "four_bar_window" in j:
+                # Four-bar elbow (D19): the servo holds the forearm's angle to the HORIZONTAL,
+                # theta1 + theta2. Sending theta2 alone would make the forearm swing with every
+                # shoulder move. The bend theta2 is still checked against arm.yaml's window.
+                lo, hi = window
+                if not (lo <= deg <= hi):
+                    raise ValueError(f"{name}: bend {deg} deg is outside {lo} to {hi} deg")
+                deg, window = values[1] + deg, j["four_bar_window"]
             try:
                 pulses.append(joint_to_pulse(
-                    deg, self.arm.raw["joints"][name]["window"],
+                    deg, window,
                     j.get("center_us", self.cal["center_us"]),
                     j["direction"], j["us_per_deg"], j["min_us"], j["max_us"]))
             except ValueError as e:
