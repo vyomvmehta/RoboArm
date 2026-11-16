@@ -42,6 +42,7 @@ speed_limits_deg_per_s:  # start low (CLAUDE.md section 12); widen once the arm 
   j2_elbow: 45
   j3_wrist: 90
   j4_gripper: 90
+gripper_speed_mm_per_s: 20  # the laptop ramp works in mm for the gripper (26-40 mm in ~0.7 s)
 
 poses:
   # Ready pose above the middle of the pick zone, gripper pointing down. Given as a target
