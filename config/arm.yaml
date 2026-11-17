@@ -20,8 +20,12 @@ links:  # D14 ON HOLD (Nov 5): 11 / 10 / 7 cm until the servo torque test; may g
 # the software allows: it stays clear of the ends and of the arm hitting itself or the table.
 joints:
   j0_base:
-    window: [-90, 90]
-    limits: [-85, 85]
+    # Geared turntable (Siddharth, PR #10; D22): 16T fixed sun, 36T planet on the MG996R horn,
+    # so the base turns 36/16 = 2.25 deg per servo degree. Window = 180 x 2.25 = 405 deg.
+    gear_ratio: 2.25
+    window: [-202.5, 202.5]
+    limits: [-170, 170]   # PROPOSED: cable slack decides this. Vyom + Siddharth to confirm on the
+                          # built base. The base never wraps: 160 -> -160 swings back through 0.
   j1_shoulder:
     window: [-30, 150]    # picks on the table use about 0..65; above 90 the arm leans back
     limits: [-20, 140]
@@ -60,4 +64,4 @@ workspace:  # targets outside this box are rejected before IK (CLAUDE.md section
 
 # Assembly note for the CAD and the build: the window centre is where the servo sits at 1500 us.
 # Put each horn on with the servo at 1500 us and the joint at its window centre:
-#   base 0 (facing forward), shoulder 60, elbow -70, wrist -30.
+#   base 0 (facing forward; geared, so fit the planet with the box facing forward), shoulder 60, elbow -70, wrist -30.

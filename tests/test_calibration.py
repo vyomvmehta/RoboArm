@@ -125,3 +125,27 @@ def test_park_pose_is_valid_with_the_four_bar():
     p = load_arm().park
     import math
     _cal().to_pulses([math.degrees(v) for v in (p.theta0, p.theta1, p.theta2, p.theta3)] + [30])
+
+
+def test_gear_ratio_divides_the_servo_turn():
+    from arm.calibration import joint_to_pulse
+    base = dict(window=(-202.5, 202.5), center_us=1475, direction=1, us_per_deg=11.3889,
+                min_us=500, max_us=2450)
+    assert joint_to_pulse(0, **base, gear_ratio=2.25) == 1475
+    # 90 base degrees = 40 servo degrees = 455.6 us
+    assert joint_to_pulse(90, **base, gear_ratio=2.25) == round(1475 + 40 * 11.3889)
+    assert joint_to_pulse(-90, **base, gear_ratio=2.25) == round(1475 - 40 * 11.3889)
+    # default ratio 1 is unchanged behaviour
+    assert joint_to_pulse(40, **base) == round(1475 + 40 * 11.3889)
+
+
+def test_geared_base_limits_map_inside_min_max():
+    # +-170 base deg -> +-75.6 servo deg -> about 1475 +- 860 us, inside 500-2450.
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    arm = load_arm()
+    cal = load_calibration(arm)
+    park = [0, 90, -130, -40, arm.raw["gripper"]["closed_mm"]]
+    lo, hi = arm.raw["joints"]["j0_base"]["limits"]
+    for deg, expect in ((lo, 1475 - 170 / 2.25 * 11.3889), (hi, 1475 + 170 / 2.25 * 11.3889)):
+        assert cal.to_pulses([deg] + park[1:])[0] == round(expect)

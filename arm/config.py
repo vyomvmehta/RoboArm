@@ -18,7 +18,7 @@ JOINTS = ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")
 class ArmConfig:
     geometry: ArmGeometry
     limits: JointLimits
-    windows: JointLimits  # the servo's full 180 degrees, in joint angles
+    windows: JointLimits  # the servo's full 180 degrees (x gear_ratio), in joint angles
     home: JointAngles
     park: JointAngles
     workspace: dict
@@ -37,6 +37,15 @@ def _joint_set(joints: dict, key: str) -> JointLimits:
     return JointLimits(*(_range(joints[name][key]) for name in JOINTS))
 
 
+def gear_ratio(raw: dict, name: str) -> float:
+    """Joint degrees per servo degree (D22). 1 unless arm.yaml gives the joint a gear_ratio:
+    the geared base turns 2.25 deg per servo degree, so its window can span 180 x 2.25."""
+    ratio = raw["joints"][name].get("gear_ratio", 1)
+    if not (isinstance(ratio, (int, float)) and ratio > 0):
+        raise ValueError(f"{name}: gear_ratio must be a positive number, got {ratio!r}")
+    return ratio
+
+
 def load_arm(path: Path | str = DEFAULT_PATH) -> ArmConfig:
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     geometry = ArmGeometry(**raw["links"])
@@ -46,8 +55,10 @@ def load_arm(path: Path | str = DEFAULT_PATH) -> ArmConfig:
     for name, (lo, hi), (wlo, whi) in zip(JOINTS, vars(limits).values(), vars(windows).values()):
         if lo < wlo or hi > whi:
             raise ValueError(f"{name}: limits must sit inside the servo window")
-        if whi - wlo > math.radians(180) + 1e-9:
-            raise ValueError(f"{name}: window is wider than the servo's 180 degrees")
+        ratio = gear_ratio(raw, name)
+        if whi - wlo > math.radians(180 * ratio) + 1e-9:
+            raise ValueError(f"{name}: window is wider than the servo's 180 degrees"
+                             + (f" x gear ratio {ratio}" if ratio != 1 else ""))
 
     h = raw["poses"]["home"]
     home = ik(geometry, h["x"], h["y"], h["z"], math.radians(h["pitch"]), limits=limits)

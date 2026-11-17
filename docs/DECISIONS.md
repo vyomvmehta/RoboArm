@@ -189,3 +189,11 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 - **Heatsink** for the LM2596 from RidgidWare (cheapest way to raise its sustained current).
 
 **Test result 2026-11-08 (no meter yet):** trigger at 9 V, LM2596 at 6.0 V; one MG996R (360° version, used as a load) stalled by hand for 1–2 s through the PCA9685: no cut-out, LM2596 not warm. Provisional **pass**; still to read the output voltage during a stall with a multimeter.
+
+## D22: Geared base joint, 2.25:1 (2026-11-17, Vyom; limits to confirm with Siddharth)
+
+- **What:** Siddharth's turntable (PR #10) drives the base through a 16T fixed sun and a 36T planet on the MG996R horn, so the base turns 36/16 = **2.25 deg per servo degree** (160 deg of servo ≈ 360 deg of base). `config/arm.yaml` now takes an optional per-joint `gear_ratio` (default 1); `j0_base` has `gear_ratio: 2.25`.
+- **Code:** the window check allows 180 × ratio (j0 window is now ±202.5); `joint_to_pulse` divides the joint angle by the ratio, so the base moves about **5.06 µs per base degree** (11.3889 / 2.25). `us_per_deg` in `calibration.yaml` stays per *servo* degree, which is what the bench measures, so none of Ishaan's numbers changed (comments only).
+- **Limits ±170 (PROPOSED):** set by the cable slack through the turntable, not the servo. Vyom + Siddharth to confirm on the built base. The base never wraps: a move from +160 to −160 swings back through 0, which is what keeps the cables from winding up.
+- **Direction:** left at +1. The servo is mounted shaft-down, so it may need −1: check on the bench that a longer pulse turns the base counter-clockwise seen from above (+theta0).
+- **Side effects:** the base speed limit (45 deg/s) is in base degrees, so the servo itself now turns at only 20 deg/s; positioning resolution is ~0.2 base deg per µs. The web page and the motion code work in joint degrees and read the limits from `arm.yaml`, so they needed no change (the top view draws the ±170 band). `tools/roboarm_bench.py` sends raw pulses and is unaffected.

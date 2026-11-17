@@ -2,6 +2,7 @@
 
 Inputs come from two files:
   config/arm.yaml          window: [low, high] for each joint (the servo's 180 degrees, in joint angles)
+                           gear_ratio (optional, default 1): joint degrees per servo degree (D22)
   config/calibration.yaml  center_us, and per joint: direction, us_per_deg, min_us, max_us
                            (a joint's own center_us, if given, overrides the top-level one,
                            so one servo can be re-centred at calibration without touching the rest)
@@ -16,21 +17,25 @@ from pathlib import Path
 
 import yaml
 
-from arm.config import JOINTS, ArmConfig
+from arm.config import JOINTS, ArmConfig, gear_ratio
 
 DEFAULT_PATH = Path(__file__).resolve().parent.parent / "config" / "calibration.yaml"
 
 
 def joint_to_pulse(deg: float, window: tuple[float, float], center_us: float,
-                   direction: int, us_per_deg: float, min_us: int, max_us: int) -> int:
+                   direction: int, us_per_deg: float, min_us: int, max_us: int,
+                   gear_ratio: float = 1) -> int:
     """Return the pulse width (whole microseconds) that puts this joint at `deg`.
 
     Raise ValueError if the pulse would fall outside [min_us, max_us]. Do NOT quietly
     clamp it: a clamped pulse means the arm silently goes somewhere other than asked.
+
+    us_per_deg is per SERVO degree (what the bench measures). A geared joint turns gear_ratio
+    joint degrees per servo degree, so the servo turns (deg - centre) / gear_ratio.
     """
     low, high = window
     centre_deg = (high + low) / 2
-    pulse = direction * us_per_deg * (deg - centre_deg) + center_us
+    pulse = direction * us_per_deg * (deg - centre_deg) / gear_ratio + center_us
     pulse = round(pulse)
 
     if not (min_us <= pulse <= max_us):
@@ -75,7 +80,8 @@ class Calibration:
                 pulses.append(joint_to_pulse(
                     deg, window,
                     j.get("center_us", self.cal["center_us"]),
-                    j["direction"], j["us_per_deg"], j["min_us"], j["max_us"]))
+                    j["direction"], j["us_per_deg"], j["min_us"], j["max_us"],
+                    gear_ratio(self.arm.raw, name)))
             except ValueError as e:
                 raise ValueError(f"{name}: {e}") from None
         g, gc = self.arm.raw["gripper"], self.cal["gripper"]

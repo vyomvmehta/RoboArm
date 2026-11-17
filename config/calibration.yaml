@@ -6,7 +6,9 @@
 #   center_us:   the pulse the horn was fitted at = the joint's window centre in config/arm.yaml.
 #                A per-joint center_us overrides the top-level one.
 #   direction:   +1 if a LONGER pulse moves the joint toward MORE POSITIVE angles, else -1
-#   us_per_deg:  pulse change per degree of joint motion (measured, see below)
+#   us_per_deg:  pulse change per degree of SERVO motion (measured, see below). For a geared joint
+#                (gear_ratio in arm.yaml, D22: the base is 2.25) the code divides by the ratio,
+#                so the base moves at 11.3889 / 2.25 = ~5.06 us per base degree.
 #   min_us/max_us: never send a pulse outside these. Kept 50 us INSIDE the firmware hard limits
 #                (PULSE_MIN/PULSE_MAX in arm_controller.ino, 450-2500 on every joint, PR #8),
 #                which sit AT the servos' measured travel, so the firmware only trips on a bug.
@@ -25,7 +27,9 @@
 center_us: 1475   # every servo's measured mid-travel; a joint may override it below
 
 joints:
-  j0_base:     {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R
+  j0_base:     {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R, geared 2.25:1
+  # D22: the base servo is mounted shaft-down in the turntable, so direction may need to be -1.
+  # CHECK ON THE BENCH: a longer pulse must turn the base toward +theta0 (counter-clockwise from above).
   j1_shoulder: {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R
   j2_elbow:    {center_us: 1475, direction: -1, us_per_deg: 11.3889, min_us: 500, max_us: 2450,  # MG996R
                 four_bar_window: [-100, 80]}
