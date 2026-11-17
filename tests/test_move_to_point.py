@@ -54,7 +54,7 @@ def test_set_target_sets_the_goal_not_the_sent_pulses(arm):
         park_us = c.target_us
         why = c.set_target(point_to_joints(arm, 150, 0, 60, -90) + [30])
         same = c.target_us == park_us       # nothing jumps on the call itself
-        await c.disarm()
+        await c.disarm(park_first=False)
         return why, same, c.goal_values
 
     why, same, goal = asyncio.run(go())
@@ -68,7 +68,7 @@ def test_heartbeat_moves_the_sent_pose_toward_the_goal(arm):
         goal = point_to_joints(arm, 150, 0, 60, -90) + [30]
         c.set_target(goal)
         await asyncio.sleep(0.2)
-        await c.disarm()
+        await c.disarm(park_first=False)
         return c.target_values, goal
 
     target, goal = asyncio.run(go())
@@ -128,3 +128,52 @@ def test_four_bar_elbow_servo_never_exceeds_the_j2_cap(arm):
         servo = (c.target_values[1] - before[1]) + (c.target_values[2] - before[2])
         assert abs(servo) <= c.max_step[2] + 1e-9
     assert c.target_values == pytest.approx(c.goal_values)
+
+
+@pytest.mark.parametrize("elbow_step", [0.0, -1.5])
+def test_a_frozen_elbow_does_not_freeze_or_reverse_the_arm(arm, elbow_step):
+    # PR #15 review (Ishaan): elbow speed <= 0 holds theta2. The four-bar cap used to scale the
+    # whole step by 0 (nothing ever moved, "moving" forever) or by a negative (moved away).
+    c = Controller(FakeNano(), load_calibration(arm))
+    c.max_step = list(c.max_step)
+    c.max_step[2] = elbow_step
+    cur = [0, 30, -100, -30, 30]
+    c.target_values, c.goal_values = list(cur), [0, 90, -100, -30, 30]   # shoulder only
+    c._advance()
+    assert 30 < c.target_values[1] <= 30 + c.max_step[1] + 1e-9          # toward the goal, within its cap
+    for _ in range(100):
+        c._advance()
+    assert c.target_values == pytest.approx(c.goal_values)
+    assert c.status()["moving"] is False
+
+
+def test_disarm_ramps_to_park_before_going_limp(arm):
+    async def go():
+        nano = FakeNano()
+        c = Controller(nano, load_calibration(arm))
+        await c.arm()
+        park = c.park_values()
+        c.set_target([park[0] + 20] + park[1:])     # move the base 20 deg away
+        await asyncio.sleep(0.6)
+        assert c.target_values != park
+        task = asyncio.create_task(c.disarm())
+        await asyncio.sleep(0.05)
+        refused = c.set_target(park)                # new targets are refused while parking
+        await task
+        return c, park, refused
+    c, park, refused = asyncio.run(go())
+    assert c.target_values == park and not c.armed
+    assert refused and "disarming" in refused
+
+
+def test_disarm_without_park_first_goes_limp_at_once(arm):
+    async def go():
+        c = Controller(FakeNano(), load_calibration(arm))
+        await c.arm()
+        park = c.park_values()
+        c.set_target([park[0] + 20] + park[1:])
+        await asyncio.sleep(0.3)
+        await c.disarm(park_first=False)
+        return c, park
+    c, park = asyncio.run(go())
+    assert not c.armed and c.target_values != park

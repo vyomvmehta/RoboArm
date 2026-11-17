@@ -46,6 +46,7 @@ class Controller:
                          + [arm.raw["gripper_speed_mm_per_s"] * self.period_s])
         self._task: asyncio.Task | None = None
         self.fault: str | None = None   # why the heartbeat stopped itself; shown on the page
+        self.parking = False            # True while disarm() ramps to park: new targets refused
 
     def park_values(self) -> list[float]:
         """Park pose as [j0..j3 degrees, gripper mm], from config/arm.yaml."""
@@ -77,14 +78,41 @@ class Controller:
         self._task = asyncio.create_task(self._heartbeat())
         return None
 
-    async def disarm(self) -> None:
-        # PROTOCOL.md: D = go limp (v0 skips "move to park first"; that needs the limiter).
-        self.armed = False
-        if self._task:
-            self._task.cancel()
-            self._task = None
-        if self.link.connected:
-            self.link.send("D")
+    async def disarm(self, park_first: bool = True, timeout_s: float = 15.0) -> None:
+        """Ramp to the park pose, THEN send D (go limp).
+
+        D makes every servo limp at once, so sending it mid-reach drops the arm. Park is the
+        pose a limp arm rests in, so going there first makes "limp" a non-event. The ramp
+        (and the firmware limiter behind it) keeps that move at the normal speed caps.
+
+        Skipped (straight to D) when there is nothing safe to ramp with: not armed, the
+        heartbeat has stopped, the link is down or the Nano is not ARMED. timeout_s is a
+        backstop: if park isn't reached in time (it takes ~4 s from the far end of travel),
+        go limp anyway rather than hang.
+        """
+        try:
+            if (park_first and self.armed and self._task is not None and self.link.connected
+                    and self.link.state == "ARMED"):
+                self.parking = True
+                self.goal_values = self.park_values()
+                loop = asyncio.get_running_loop()
+                deadline = loop.time() + timeout_s
+                while (self.armed and self.target_values != self.goal_values
+                       and loop.time() < deadline):
+                    await asyncio.sleep(self.period_s)
+                if self.target_values != self.goal_values:
+                    log.warning("disarm: park not reached, going limp where it is")
+                await asyncio.sleep(self.period_s)   # let the final park frame go out
+        finally:
+            # Always runs, even if the wait is cancelled (server shutting down, browser gone):
+            # a disarm that never sends D would leave the arm powered with nobody driving it.
+            self.parking = False
+            self.armed = False
+            if self._task:
+                self._task.cancel()
+                self._task = None
+            if self.link.connected:
+                self.link.send("D")
 
     # ------------------------------------------------------------------ targets
     def set_target(self, values: list[float]) -> str | None:
@@ -94,6 +122,8 @@ class Controller:
         """
         if not self.armed:
             return "not armed: press Arm first"
+        if self.parking:
+            return "disarming: moving to the park pose first"
         try:
             self.cal.to_pulses(values)  # validate the END pose; the poses on the way are inside the same box
         except ValueError as e:
@@ -123,8 +153,15 @@ class Controller:
         firmware would then lag and bend the path. If that sum is over J2's step, shrink the
         WHOLE step by the same fraction: every joint keeps its share, so they still arrive
         together, just a little later.
+
+        An elbow speed of 0 or less means "theta2 is frozen" (same rule as step_toward). The
+        servo still has to turn with the shoulder to hold theta2, so there is no step that keeps
+        it still: leave the step alone and let the firmware's own J2 cap be the guard. Scaling
+        by 0 here froze the whole arm, and a negative speed reversed it (PR #15 review, Ishaan).
         """
         if "four_bar_window" not in self.cal.cal["joints"]["j2_elbow"]:
+            return nxt
+        if self.max_step[2] <= 0:
             return nxt
         servo_move = abs((nxt[1] - cur[1]) + (nxt[2] - cur[2]))
         if servo_move <= self.max_step[2] + 1e-9:
@@ -163,7 +200,7 @@ class Controller:
                 log.exception("could not send D after the heartbeat stopped")
 
     def status(self) -> dict:
-        return {**self.link.status(), "armed": self.armed, "fault": self.fault,
+        return {**self.link.status(), "armed": self.armed, "fault": self.fault, "parking": self.parking,
                 "target_us": self.target_us,
                 "target_values": self.target_values, "goal_values": self.goal_values,
                 "moving": self.goal_values is not None and self.target_values != self.goal_values}
