@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GitBranch } from "lucide-react";
 import { ReactNode } from "react";
 import ScrambleText from "./ScrambleText";
+import { MaskReveal } from "./Reveal";
 
 // Provisional page frame. Vyom owns the final shell and tokens (site/README.md).
 const NAV = [
@@ -21,7 +22,7 @@ export function Nav() {
         <ul className="flex items-center sm:gap-2">
           {NAV.map((n) => (
             <li key={n.href}>
-              <Link href={n.href} className="whitespace-nowrap px-1.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-mute transition-colors hover:text-paper sm:px-3 sm:text-[11px] sm:tracking-[0.14em]">
+              <Link href={n.href} className="whitespace-nowrap px-1.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-mute transition-colors duration-150 hover:text-paper sm:px-3 sm:text-[11px] sm:tracking-[0.14em]">
                 {n.label}
               </Link>
             </li>
@@ -40,7 +41,7 @@ export function Nav() {
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-white/[0.08]">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-4 py-8 font-mono text-[11px] text-mute sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-4 py-8 font-mono text-[11px] text-mute sm:flex-row sm:items-center sm:justify-between sm:px-6 md:pr-48">
         <span>RoboArm · Vyom Mehta, Ishaan, Siddharth · University of Waterloo</span>
         <span>
           Numbers on this site are read from <a className="text-paper/80 underline underline-offset-4" href={`${REPO}/tree/main/config`}>config/</a> at build time.{" "}
@@ -55,9 +56,9 @@ export function PageHeader({ index, kicker, title, lead }: { index: string; kick
   return (
     <div className="mx-auto max-w-[1400px] px-4 pb-10 pt-16 sm:px-6 sm:pt-24">
       <p className="label">
-        <span className="text-signal">{index}</span> / {kicker}
+        <span className="text-signal">{index}</span> / <ScrambleText text={kicker} />
       </p>
-      <ScrambleText as="h1" text={title} className="mt-4 block font-sans text-4xl font-medium tracking-tight text-paper sm:text-6xl" />
+      <MaskReveal as="h1" text={title} className="mt-4 font-sans text-4xl font-medium tracking-tight text-paper sm:text-6xl" />
       <p className="mt-5 max-w-2xl text-base leading-relaxed text-paper/70 sm:text-lg">{lead}</p>
     </div>
   );
@@ -66,8 +67,8 @@ export function PageHeader({ index, kicker, title, lead }: { index: string; kick
 export function SectionTitle({ kicker, title }: { kicker: string; title: string }) {
   return (
     <div className="mb-8">
-      <p className="label">{kicker}</p>
-      <ScrambleText as="h2" text={title} className="mt-3 block font-sans text-2xl font-medium tracking-tight text-paper sm:text-4xl" />
+      <ScrambleText as="p" text={kicker} className="label" />
+      <MaskReveal as="h2" text={title} className="mt-3 font-sans text-2xl font-medium tracking-tight text-paper sm:text-4xl" />
     </div>
   );
 }

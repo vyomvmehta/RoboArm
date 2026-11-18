@@ -93,7 +93,7 @@ export function StateDiagram({ current }: { current: FwState }) {
     const on = current === id;
     return (
       <g>
-        <rect x={x - 62} y={y - 20} width="124" height="40" fill={on ? "rgba(255,106,26,0.12)" : "#10141A"} stroke={on ? O : W} strokeWidth={on ? 1.6 : 1} style={{ transition: "all .3s" }} />
+        <rect x={x - 62} y={y - 20} width="124" height="40" fill={on ? "rgba(255,106,26,0.12)" : "#10141A"} stroke={on ? O : W} strokeWidth={on ? 1.6 : 1} style={{ transition: "fill 200ms ease, stroke 200ms ease" }} />
         <text x={x} y={y + 4} textAnchor="middle" className="font-mono" fontSize="11" fill={on ? O : "#F3F4F6"}>
           {id}
         </text>

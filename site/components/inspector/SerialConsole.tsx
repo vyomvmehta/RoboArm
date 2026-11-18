@@ -58,11 +58,11 @@ export default function SerialConsole({ arm, poseRef }: { arm: ArmData; poseRef:
           <span className={`h-1.5 w-1.5 rounded-full ${paused ? "bg-mute" : "animate-pulse bg-scope"}`} />
           Serial monitor · simulated · {arm.comms.baud} 8N1
         </span>
-        <button onClick={() => setPaused((p) => !p)} className="label hover:text-paper" aria-pressed={paused}>
+        <button onClick={() => setPaused((p) => !p)} className="label press hover:text-paper" aria-pressed={paused}>
           {paused ? "resume" : "pause"}
         </button>
       </div>
-      <div ref={box} className="h-44 overflow-y-auto px-3 py-2 font-mono text-[11px] leading-[1.6]" aria-live="off">
+      <div ref={box} className="h-40 overflow-y-auto overscroll-contain px-3 py-2 font-mono text-[11px] leading-[1.6]" aria-live="off">
         {lines.map((l) => (
           <div key={l.id} className={l.dir === "#" ? "text-mute" : l.bad ? "text-red-400" : l.dir === ">" ? "text-paper/85" : "text-scope"}>
             <span className="mr-2 select-none text-white/30">{l.dir === "#" ? " " : l.dir}</span>

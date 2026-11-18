@@ -4,9 +4,31 @@
 
 :root {
   color-scheme: dark;
+  /* One easing family for the whole site. Entrances and exits use --ease-out,
+     things that move while on screen use --ease-in-out. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 html {
-  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+[role="tab"] {
+  touch-action: manipulation;
+}
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* iOS zooms the page into any input under 16px */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 body {
   @apply bg-ink text-paper font-sans antialiased;
@@ -31,31 +53,64 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Staggered entrance: children of .stagger rise in once .in is set (see Reveal.tsx). */
+  /* Press feedback for anything pressable. */
+  .press {
+    transition: transform 160ms var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* Group entrance (Reveal.tsx). One entrance per container; delays are set per child and
+     shrink down the group, a child marked data-lead travels furthest, and children
+     marked data-fade only fade. Transitions, so nothing blocks interaction. */
   .stagger > * {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
     transition:
-      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: calc(var(--i, 0) * 70ms);
+      opacity 500ms var(--ease-out),
+      transform 500ms var(--ease-out);
+    transition-delay: var(--delay, 0ms);
+  }
+  .stagger > [data-lead] {
+    transform: translateY(12px);
+  }
+  .stagger > [data-fade] {
+    transform: none;
   }
   .stagger.in > * {
     opacity: 1;
     transform: none;
   }
 
-  /* SVG line drawing: every shape carries pathLength="1" (see Draw.tsx). */
+  /* Masked heading reveal (MaskReveal.tsx): the line rises out of its own clip box. */
+  .mask {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+  }
+  .mask > span {
+    display: block;
+    transform: translateY(105%);
+    transition: transform 700ms var(--ease-out);
+  }
+  .mask.in > span {
+    transform: none;
+  }
+
+  /* SVG line drawing: every shape carries pathLength="1". Explanatory, seen once per
+     visit, so it is allowed to run longer than UI motion. */
   .draw [data-draw] {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: calc(var(--d, 0) * 120ms);
+    transition: stroke-dashoffset 900ms var(--ease-in-out);
+    transition-delay: calc(var(--d, 0) * 70ms);
   }
   .draw [data-fade] {
     opacity: 0;
-    transition: opacity 0.6s ease;
-    transition-delay: calc(var(--d, 0) * 120ms + 500ms);
+    transition: opacity 300ms var(--ease-out);
+    transition-delay: calc(var(--d, 0) * 70ms + 450ms);
   }
   .draw.in [data-draw] {
     stroke-dashoffset: 0;
@@ -123,16 +178,27 @@ body {
   }
 }
 
+/* Reduced motion: keep the fades, drop the movement and the delays. */
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
   .stagger > *,
-  .draw [data-draw],
-  .draw [data-fade] {
-    transition: none !important;
-    opacity: 1 !important;
+  .stagger > [data-lead] {
     transform: none !important;
+    transition: opacity 200ms ease !important;
+    transition-delay: 0ms !important;
+  }
+  .mask > span {
+    transform: none !important;
+    transition: none !important;
+  }
+  .draw [data-draw] {
     stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+  .draw [data-fade] {
+    transition: opacity 200ms ease !important;
+    transition-delay: 0ms !important;
+  }
+  .press:active {
+    transform: none;
   }
 }

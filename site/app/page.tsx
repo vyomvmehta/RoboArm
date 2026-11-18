@@ -4,7 +4,7 @@ import ArmInspector from "@/components/inspector/ArmInspector";
 import { CodeFile } from "@/components/inspector/CodeView";
 import ScrambleText from "@/components/ScrambleText";
 import SpotlightCard from "@/components/SpotlightCard";
-import { Draw, Stagger } from "@/components/Reveal";
+import { Draw, MaskReveal, Stagger } from "@/components/Reveal";
 import { SectionTitle } from "@/components/Shell";
 import { CalibrationRings, IsoGrid, WaveDivider } from "@/components/Accents";
 import { excerpt, loadArm } from "@/lib/repo";
@@ -66,26 +66,25 @@ export default function Home() {
     <>
       <section className="relative mx-auto max-w-[1400px] px-4 pt-10 sm:px-6 sm:pt-12">
         <IsoGrid className="pointer-events-none absolute right-0 top-0 -z-10 hidden h-72 w-[36rem] lg:block" />
+        {/* Hero entrance: the title is the lead and rises out of its mask; the label only
+            decrypts in place; the paragraph and the inspector follow as one short wave. */}
+        <p className="label">
+          <span className="text-signal">●</span> <ScrambleText text="In build · University of Waterloo Mechatronics · Nov 2026" />
+        </p>
+        <MaskReveal as="h1" text="RoboArm" className="mt-5 max-w-4xl font-sans text-5xl font-medium leading-[0.95] tracking-tight text-paper sm:text-7xl" />
         <Stagger>
-          <p className="label">
-            <span className="text-signal">●</span> In build · University of Waterloo Mechatronics · Nov 2026
-          </p>
-          <h1 className="mt-5 max-w-4xl font-sans text-5xl font-medium leading-[0.95] tracking-tight text-paper sm:text-7xl">
-            <ScrambleText text="RoboArm" duration={700} />
-          </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-paper/70">
             A five-servo desktop robot arm, designed in SolidWorks and 3D printed. Type a point on a web page and inverse kinematics moves the gripper there. Below is the arm
             as its own config files describe it.
           </p>
+          <div className="hairline mt-8">
+            <ArmInspector arm={arm} files={files} />
+          </div>
+          <p data-fade className="mt-3 font-mono text-[11px] text-mute">
+            Status, 16 Nov 2026: electronics and firmware are bench-tested; the arm is not assembled yet. Photos, renders and measured results will replace this schematic when
+            it runs.
+          </p>
         </Stagger>
-
-        <div className="hairline mt-8">
-          <ArmInspector arm={arm} files={files} />
-        </div>
-        <p className="mt-3 font-mono text-[11px] text-mute">
-          Status, 16 Nov 2026: electronics and firmware are bench-tested; the arm is not assembled yet. Photos, renders and measured results will replace this schematic when it
-          runs.
-        </p>
       </section>
 
       <WaveDivider seed={2} className="mt-20" />
@@ -151,10 +150,10 @@ export default function Home() {
         <SectionTitle kicker={`Full stretch ${reach} mm · pick zone ${arm.workspace.rMin}-${arm.workspace.rMax} mm`} title="Go deeper" />
         <Stagger className="grid gap-px bg-white/[0.08] md:grid-cols-3">
           {pages.map((p) => (
-            <Link key={p.href} href={p.href} className="group block bg-ink p-6 transition-colors hover:bg-panel sm:p-8">
+            <Link key={p.href} href={p.href} className="group block bg-ink p-6 transition-colors duration-150 hover:bg-panel sm:p-8">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-signal">{p.n}</span>
-                <ArrowUpRight size={18} className="text-mute transition-transform duration-300 ease-crisp group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-paper" />
+                <ArrowUpRight size={18} className="text-mute transition-transform duration-200 ease-crisp group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-paper" />
               </div>
               <h3 className="mt-10 font-sans text-2xl font-medium text-paper">{p.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-paper/65">{p.body}</p>

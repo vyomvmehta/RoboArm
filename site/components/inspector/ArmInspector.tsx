@@ -1,13 +1,34 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Boxes, Cable, Code2, Crosshair, Eye, Pause, Play } from "lucide-react";
 import { ArmData, Pose, TORQUE_SOURCE, chain, holdingTorque, ikPlanar, inRange, posePulses } from "@/lib/arm";
-import { usePrefersReducedMotion, useSprings } from "@/lib/hooks";
+import { usePrefersReducedMotion, useSprings, useOnScreen } from "@/lib/hooks";
 import { BOM } from "@/content/bom";
 import MagneticButton from "../MagneticButton";
 import Schematic from "./Schematic";
-import CodeView, { CodeFile } from "./CodeView";
-import SerialConsole from "./SerialConsole";
+import CodeViewRaw, { CodeFile } from "./CodeView";
+import SerialConsoleRaw from "./SerialConsole";
+
+// The pose springs render this component every frame while the arm moves. The panels below
+// do not depend on the pose, so they are memoised and skip those renders.
+const CodeView = memo(CodeViewRaw);
+const SerialConsole = memo(SerialConsoleRaw);
+const BomList = memo(function BomList() {
+  return (
+    <ul className="divide-y divide-white/[0.06] font-mono text-xs">
+      {BOM.map((b) => (
+        <li key={b.part} className="grid grid-cols-[3.2rem_1fr_auto] items-baseline gap-3 py-2">
+          <span className="text-scope">{b.qty}</span>
+          <span className="min-w-0">
+            <span className="text-paper">{b.part}</span>
+            <span className="block truncate font-sans text-[12px] text-mute">{b.role}</span>
+          </span>
+          <span className={b.status === "planned" ? "text-signal" : "text-paper/60"}>{b.status}</span>
+        </li>
+      ))}
+    </ul>
+  );
+});
 
 type Tab = "overview" | "pinout" | "bom" | "code";
 const TABS: { id: Tab; label: string; icon: typeof Eye }[] = [
@@ -92,11 +113,13 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
   }, [stage, home, park, ikPose, arm.gripper]);
 
   useEffect(() => setStep(0), [stage]);
+  // The loop only runs while the schematic is on screen and the tab is visible.
+  const { ref: viewRef, onScreen } = useOnScreen<HTMLDivElement>();
   useEffect(() => {
-    if (!playing || reduced || script.length < 2) return;
+    if (!playing || reduced || !onScreen || script.length < 2) return;
     const t = setInterval(() => setStep((s) => s + 1), stage === 0 ? 4200 : 2400);
     return () => clearInterval(t);
-  }, [playing, reduced, script.length, stage]);
+  }, [playing, reduced, onScreen, script.length, stage]);
 
   const goal = script[step % script.length];
   const [t0, t1, t2, t3, grip] = useSprings([goal.t0, goal.t1, goal.t2, goal.t3, goal.grip]);
@@ -127,7 +150,7 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
         <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-2.5">
           <span className="label">Schematic · side view · mm · from config/arm.yaml</span>
           <button
-            className="label inline-flex items-center gap-1.5 hover:text-paper"
+            className="label press inline-flex items-center gap-1.5 hover:text-paper"
             onClick={() => setPlaying((p) => !p)}
             aria-pressed={!playing}
             aria-label={playing ? "Pause motion" : "Play motion"}
@@ -136,7 +159,7 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
           </button>
         </div>
 
-        <div className="relative aspect-[400/340] w-full">
+        <div ref={viewRef} className="relative aspect-[400/340] w-full">
           <Schematic
             arm={arm}
             pose={pose}
@@ -169,7 +192,7 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
                 </div>
                 <div className="font-mono text-[10px] tabular-nums text-scope">{pulses[i]} µs</div>
                 <div className="mt-1.5 h-0.5 bg-white/10" title={i > 0 && i < 4 ? TORQUE_SOURCE : "No static load modelled"}>
-                  <div className={`h-full ${torque[i].pct > 50 ? "bg-red-400" : "bg-signal"}`} style={{ width: `${Math.min(100, torque[i].pct * 2)}%` }} />
+                  <div className={`h-full origin-left ${torque[i].pct > 50 ? "bg-red-400" : "bg-signal"}`} style={{ transform: `scaleX(${Math.min(1, torque[i].pct / 50)})` }} />
                 </div>
                 <div className="mt-1 font-mono text-[10px] tabular-nums text-mute">{i > 0 && i < 4 ? `${torque[i].pct.toFixed(0)}% stall` : "no load"}</div>
               </div>
@@ -220,7 +243,7 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
               role="tab"
               aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`flex shrink-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 font-mono text-[10.5px] uppercase tracking-[0.06em] transition-colors ${
+              className={`flex shrink-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 font-mono text-[10.5px] uppercase tracking-[0.06em] transition-colors duration-150 ${
                 tab === id ? "border-signal text-paper" : "border-transparent text-mute hover:text-paper"
               }`}
             >
@@ -311,18 +334,7 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
 
           {tab === "bom" && (
             <div className="space-y-5">
-              <ul className="divide-y divide-white/[0.06] font-mono text-xs">
-                {BOM.map((b) => (
-                  <li key={b.part} className="grid grid-cols-[3.2rem_1fr_auto] items-baseline gap-3 py-2">
-                    <span className="text-scope">{b.qty}</span>
-                    <span className="min-w-0">
-                      <span className="text-paper">{b.part}</span>
-                      <span className="block truncate font-sans text-[12px] text-mute">{b.role}</span>
-                    </span>
-                    <span className={b.status === "planned" ? "text-signal" : "text-paper/60"}>{b.status}</span>
-                  </li>
-                ))}
-              </ul>
+              <BomList />
               <dl className="grid grid-cols-2 gap-px bg-white/[0.08] font-mono text-xs">
                 {[
                   ["Speed cap J0-J2", `${arm.joints[0].speedDegPerS} °/s`],
@@ -348,10 +360,14 @@ export default function ArmInspector({ arm, files }: { arm: ArmData; files: Code
                   </MagneticButton>
                 ))}
               </div>
-              <CodeView file={files[file]} maxHeight="17rem" />
-              <SerialConsole arm={arm} poseRef={poseRef} />
+              <CodeView file={files[file]} maxHeight="30rem" />
             </div>
           )}
+        </div>
+
+        {/* The serial monitor stays on the bench under every tab: it is the live half of the panel. */}
+        <div className="border-t border-white/[0.08] p-4 sm:p-5">
+          <SerialConsole arm={arm} poseRef={poseRef} />
         </div>
       </div>
     </div>

@@ -2,7 +2,11 @@
 import { Children, CSSProperties, ElementType, ReactNode, isValidElement, cloneElement } from "react";
 import { useInView } from "@/lib/hooks";
 
-/** Staggered entrance for direct children, triggered when the group scrolls into view. */
+// Gaps shrink down the group (70, 55, 45, 35 ms ...) so it reads as one wave, not a
+// metronome. Anything past the sixth child arrives with the sixth: total stays under 250 ms.
+const DELAYS = [0, 70, 125, 170, 205, 230];
+
+/** Group entrance for direct children, triggered once when the group scrolls into view. */
 export function Stagger({
   children,
   className = "",
@@ -17,9 +21,21 @@ export function Stagger({
     <Tag ref={ref} className={`stagger ${inView ? "in" : ""} ${className}`}>
       {Children.map(children, (c, i) =>
         isValidElement<{ style?: CSSProperties }>(c)
-          ? cloneElement(c, { style: { ...c.props.style, ["--i" as string]: i } as CSSProperties })
+          ? cloneElement(c, {
+              style: { ...c.props.style, ["--delay" as string]: `${DELAYS[Math.min(i, DELAYS.length - 1)]}ms` } as CSSProperties,
+            })
           : c,
       )}
+    </Tag>
+  );
+}
+
+/** Heading that rises out of its own clip box when it scrolls into view. */
+export function MaskReveal({ text, as: Tag = "h2", className = "" }: { text: string; as?: ElementType; className?: string }) {
+  const { ref, inView } = useInView<HTMLElement>(0.4);
+  return (
+    <Tag ref={ref} className={`mask ${inView ? "in" : ""} ${className}`}>
+      <span>{text}</span>
     </Tag>
   );
 }

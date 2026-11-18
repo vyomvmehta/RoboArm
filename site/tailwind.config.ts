@@ -2,6 +2,8 @@ import type { Config } from "tailwindcss";
 
 // Design tokens. Provisional: Vyom owns the final token set and shell (see site/README.md).
 const config: Config = {
+  // Hover styles only where hover exists: touch fires false hovers on tap.
+  future: { hoverOnlyWhenSupported: true },
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -20,7 +22,7 @@ const config: Config = {
         mono: ["'JetBrains Mono Variable'", "ui-monospace", "monospace"],
       },
       transitionTimingFunction: {
-        crisp: "cubic-bezier(0.22, 1, 0.36, 1)",
+        crisp: "cubic-bezier(0.23, 1, 0.32, 1)",
       },
     },
   },

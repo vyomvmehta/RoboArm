@@ -46,6 +46,21 @@ The plan for this site is in "RoboArm website: context and work split". Two poin
 
 ## Motion
 
-`lib/spring.ts` is the only spring (stiffness 120, damping 14) and `lib/hooks.ts` the only place it is driven.
-Scroll reveals are CSS classes (`.stagger`, `.draw`) toggled by `useInView`. Swapping in Anime.js or Framer Motion
-means replacing those two files. `prefers-reduced-motion` turns all of it off.
+Rules the site follows (reviewed against the `review-animations`, `choreograph`, `animation-performance`
+and `mobile-native` skills):
+
+- **One easing family.** `--ease-out` for entrances, `--ease-in-out` for the line drawings (`app/globals.css`).
+- **One entrance per container.** `Stagger` moves its direct children once; nothing inside them animates in again.
+  Delays shrink down the group (70, 55, 45 ms ...) and the whole group lands in under 250 ms of delay.
+- **Headings rise out of a mask, mono labels decrypt.** `ScrambleText` is for monospace text only, so nothing reflows.
+- **Tabs, stage buttons and file buttons switch instantly.** They are clicked repeatedly; only the press (scale 0.97,
+  150 ms) and the colour change.
+- **Transform and opacity only.** Spotlight glow, load bars, scroll HUD and magnetic buttons all move with `transform`
+  and write to the DOM directly, not through React state.
+- **The spring** (`lib/spring.ts`, stiffness 120, damping 14) drives the arm pose and the magnetic lean, because both
+  get retargeted mid-motion. Panels that do not depend on the pose are memoised.
+- **The idle loop stops** when the schematic is off screen or the tab is hidden.
+- **Hover styles and the magnetic lean need a real pointer.** `prefers-reduced-motion` keeps the fades and drops movement.
+
+Swapping in Anime.js or Framer Motion means replacing `lib/spring.ts`, `lib/hooks.ts` and `components/Reveal.tsx`.
+Not checked: frame timing on a real mid-range phone. Everything above was verified in desktop Chrome only.

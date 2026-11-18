@@ -76,3 +76,26 @@ export function useSprings(targets: number[]): number[] {
   );
   return values;
 }
+
+/** True while the element is in the viewport and the tab is visible. Used to pause loops. */
+export function useOnScreen<T extends Element>() {
+  const ref = useRef<T | null>(null);
+  const [onScreen, setOnScreen] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let seen = true;
+    const update = () => setOnScreen(seen && !document.hidden);
+    const io = new IntersectionObserver(([e]) => {
+      seen = e.isIntersecting;
+      update();
+    });
+    io.observe(el);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
+  return { ref, onScreen };
+}

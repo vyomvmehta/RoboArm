@@ -93,7 +93,7 @@ export default function ProtocolExplainer({ limits }: { limits: FwLimits }) {
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {presets.map((p) => (
-              <button key={p.label} onClick={() => setLine(p.line)} className="hairline px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-mute transition-colors hover:text-paper">
+              <button key={p.label} onClick={() => setLine(p.line)} className="hairline press px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-mute transition-colors hover:text-paper">
                 {p.label}
               </button>
             ))}
