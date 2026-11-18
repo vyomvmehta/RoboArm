@@ -13,7 +13,7 @@
 // (0x40 by default; 0x70 is the chip's "all call" address and is skipped).
 //
 // Serial Monitor at 115200 baud, line ending "Newline". Type:
-//   1500      -> current channel moves to that pulse width in microseconds (allowed 600-2400)
+//   1500      -> current channel moves to that pulse width in microseconds (allowed 400-2600; past ~600/2400 go in 50 us steps and stop at the first buzz)
 //   c3        -> switch to channel 3 (0-15)
 //   d         -> stop pulses on the current channel (servo goes limp)
 //   s         -> scan the I2C bus again
@@ -24,8 +24,8 @@
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 
-const int MIN_US = 600;
-const int MAX_US = 2400;
+const int MIN_US = 400;
+const int MAX_US = 2600;
 const uint8_t ALL_CALL = 0x70;
 
 Adafruit_PWMServoDriver *pca = nullptr;
@@ -106,7 +106,7 @@ void setup() {
   uint8_t addr = scan_i2c();
   if (addr) connect_pca(addr);
   else Serial.println(F("No PCA9685 found. Check VCC->5V, GND, SDA->A4, SCL->A5, then type s to rescan."));
-  Serial.println(F("Ready. Pulse in us (600-2400), cN = channel, d = limp, s = scan, r = registers, ? = status."));
+  Serial.println(F("Ready. Pulse in us (400-2600), cN = channel, d = limp, s = scan, r = registers, ? = status."));
 }
 
 void loop() {
@@ -168,7 +168,7 @@ void loop() {
   }
   long us = line.toInt();
   if (us < MIN_US || us > MAX_US) {
-    Serial.print(F("Rejected '")); Serial.print(line); Serial.println(F("': use 600-2400, cN, d, s, r or ?"));
+    Serial.print(F("Rejected '")); Serial.print(line); Serial.println(F("': use 400-2600, cN, d, s, r or ?"));
     return;
   }
   pca->writeMicroseconds(channel, (uint16_t)us);

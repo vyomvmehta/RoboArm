@@ -42,4 +42,86 @@ def test_real_config_turns_park_pose_into_pulses():
     from arm.config import load_arm
     cal = load_calibration(load_arm())
     pulses = cal.to_pulses([0, 90, -130, -40, 40])
-    assert len(pulses) == 5 and all(1000 <= p <= 2000 for p in pulses)
+    assert len(pulses) == 5
+    for name, p in zip(("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist"), pulses):
+        j = cal.cal["joints"][name]
+        assert j["min_us"] <= p <= j["max_us"]
+
+
+def test_every_joint_limit_fits_inside_the_pulse_limits():
+    # If this fails, a slider position allowed by arm.yaml would be refused by calibration.
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    arm = load_arm()
+    cal = load_calibration(arm)
+    for name in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist"):
+        for deg in arm.raw["joints"][name]["limits"]:
+            values = [0, 60, -70, -30, arm.raw["gripper"]["open_mm"]]  # a valid opening, not a hard-coded mm
+            values[("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist").index(name)] = deg
+            cal.to_pulses(values)  # raises if outside min/max
+
+
+def test_each_joints_window_centre_maps_to_its_centre_pulse():
+    # Horns go on at each servo's mid-travel (1475 us for every servo, Nov 13), so the window
+    # centre must map there. A joint's own center_us, if set, wins over the top-level one.
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    arm = load_arm()
+    cal = load_calibration(arm)
+    centres = [sum(arm.raw["joints"][n]["window"]) / 2
+               for n in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")]
+    pulses = cal.to_pulses(centres + [arm.raw["gripper"]["closed_mm"]])
+    expected = [cal.cal["joints"][n].get("center_us", cal.cal["center_us"])
+                for n in ("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")]
+    assert pulses[:4] == expected
+
+
+def test_calibration_range_sits_inside_the_firmware_limits():
+    # The laptop's min/max must sit inside the Nano's hard limits, or a legal slider position
+    # comes back as error 3. Red until PR #8's per-joint limits are merged (merge order guard).
+    from arm.calibration import load_calibration
+    from arm.comms.link import firmware_limits
+    from arm.config import load_arm
+    cal = load_calibration(load_arm())
+    lo, hi = firmware_limits()
+    for i, name in enumerate(("j0_base", "j1_shoulder", "j2_elbow", "j3_wrist")):
+        j = cal.cal["joints"][name]
+        assert lo[i] <= j["min_us"] and j["max_us"] <= hi[i], (name, j, lo[i], hi[i])
+    g = cal.cal["gripper"]
+    for us in (g["closed_us"], g["open_us"]):
+        assert lo[4] <= us <= hi[4], ("gripper", us, lo[4], hi[4])
+
+
+# ---------------------------------------------------------------- four-bar elbow (D19, Nov 15)
+def _cal():
+    from arm.calibration import load_calibration
+    from arm.config import load_arm
+    return load_calibration(load_arm())
+
+
+def test_four_bar_elbow_pulse_follows_the_forearms_absolute_angle():
+    cal = _cal()
+    # same absolute forearm angle (-10 deg) from two different shoulder angles -> same elbow pulse
+    a = cal.to_pulses([0, 60, -70, -30, 30])
+    b = cal.to_pulses([0, 80, -90, -30, 30])
+    assert a[2] == b[2] == 1475          # -10 deg is the four_bar_window centre
+
+
+def test_moving_only_the_shoulder_changes_the_elbow_pulse():
+    cal = _cal()
+    a = cal.to_pulses([0, 60, -70, -30, 30])
+    b = cal.to_pulses([0, 70, -70, -30, 30])   # theta2 unchanged, forearm now 10 deg higher
+    assert a[2] - b[2] == round(11.3889 * 10)  # direction -1: higher forearm = shorter pulse
+
+
+def test_four_bar_still_enforces_the_bend_limit():
+    import pytest
+    with pytest.raises(ValueError, match="j2_elbow"):
+        _cal().to_pulses([0, 90, -170, -30, 30])   # bend past arm.yaml's -160
+
+
+def test_park_pose_is_valid_with_the_four_bar():
+    from arm.config import load_arm
+    p = load_arm().park
+    import math
+    _cal().to_pulses([math.degrees(v) for v in (p.theta0, p.theta1, p.theta2, p.theta3)] + [30])

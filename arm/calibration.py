@@ -3,6 +3,8 @@
 Inputs come from two files:
   config/arm.yaml          window: [low, high] for each joint (the servo's 180 degrees, in joint angles)
   config/calibration.yaml  center_us, and per joint: direction, us_per_deg, min_us, max_us
+                           (a joint's own center_us, if given, overrides the top-level one,
+                           so one servo can be re-centred at calibration without touching the rest)
 
 joint_to_pulse: written by Vyom (step 3, 2026-11-08).
 Run the tests:  py -m pytest tests/test_calibration.py -q
@@ -58,11 +60,21 @@ class Calibration:
         if len(values) != 5:
             raise ValueError(f"expected 5 values, got {len(values)}")
         pulses = []
-        for name, deg in zip(JOINTS, values[:4]):
+        for i, (name, deg) in enumerate(zip(JOINTS, values[:4])):
             j = self.cal["joints"][name]
+            window = self.arm.raw["joints"][name]["window"]
+            if "four_bar_window" in j:
+                # Four-bar elbow (D19): the servo holds the forearm's angle to the HORIZONTAL,
+                # theta1 + theta2. Sending theta2 alone would make the forearm swing with every
+                # shoulder move. The bend theta2 is still checked against arm.yaml's window.
+                lo, hi = window
+                if not (lo <= deg <= hi):
+                    raise ValueError(f"{name}: bend {deg} deg is outside {lo} to {hi} deg")
+                deg, window = values[1] + deg, j["four_bar_window"]
             try:
                 pulses.append(joint_to_pulse(
-                    deg, self.arm.raw["joints"][name]["window"], self.cal["center_us"],
+                    deg, window,
+                    j.get("center_us", self.cal["center_us"]),
                     j["direction"], j["us_per_deg"], j["min_us"], j["max_us"]))
             except ValueError as e:
                 raise ValueError(f"{name}: {e}") from None
