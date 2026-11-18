@@ -8,7 +8,7 @@
 #   theta3 = wrist bend relative to the forearm, pitch = theta1 + theta2 + theta3 (-90 = pointing down).
 # Joint angle -> servo pulse lives in config/calibration.yaml (Ishaan), not here.
 
-links:  # D14 (Nov 9): four-bar, 13 / 12 / 7 cm; may grow to 15 / 14 after the MG996R stall test (~Nov 17)
+links:  # D14 (Nov 9): four-bar, l1 13 / l2 12 cm; l3 8.4 cm since D21 (Nov 15). Torque re-checked with SolidWorks masses: TORQUE.md "Human arm (D21)"
   l1: 130               # shoulder axis -> elbow axis
   l2: 120               # elbow axis -> wrist axis
   l3: 84                # wrist axis -> grasp point: bracket 20 + gripper 19 + 45 to the middle of the flat jaw pads (D21, Nov 15)
@@ -27,7 +27,9 @@ joints:
     limits: [-20, 140]
   j2_elbow:
     window: [-160, 20]    # elbow-up poses only use the negative side
-    limits: [-135, 0]     # -140 lets the gripper cover hit the shoulder bracket (CAD check, Nov 16, D21); closest pick needs ~-133
+    limits: [-135, -8]    # -140 lets the gripper cover hit the shoulder bracket (CAD check, Nov 16, D21); closest pick needs ~-133.
+                          # Upper end -8, not 0: at theta2 = 0 the four-bar O-E-L-C goes collinear (dead point), the crank
+                          # loses its moment arm and the linkage can flip, breaking forearm = theta1 + theta2 (PR #14 review, Ishaan).
   j3_wrist:
     window: [-120, 60]    # picking straight down needs about -85..+10 (workspace check, 2026-11-04)
     limits: [-90, 50]     # Arm Human (adopted Nov 17, D21): -90, its skins + cuff are checked to -90 (plain arm: -95, D19)

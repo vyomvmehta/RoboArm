@@ -81,7 +81,7 @@ BRACKET_REACH = 20.0                 # wrist axis -> back face of the gripper's 
 GRIPPER_POSTS = (-31.0, 6.0)         # gripper frame: posts at x = -31, y = +-6 (build_gripper)
 GRIPPER_MOUNT_Z = -19.0              # gripper frame: underside of the posts
 # Wrist axis -> gripper origin (its servo shaft at its deck) = 20 + 19 = 39; grasp point is
-# ~36.5 further (middle of the jaws) -> L3 = 75.5 => arm.yaml l3 70 -> 75.
+# ~36.5 further (middle of the jaws) -> L3 = 75.5 (Nov 9; superseded: arm.yaml l3 is 84 since D21, Nov 15).
 GRIPPER_ORIGIN = BRACKET_REACH - GRIPPER_MOUNT_Z
 
 
