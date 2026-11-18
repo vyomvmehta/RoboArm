@@ -60,6 +60,8 @@ MOUNT_HOLE_D, MOUNT_HOLE_R = 4.5, 92.0
 # ---- Lid (carries the arm's Shoulder Bracket) ----
 LID_T, LID_LIP_H, LID_LIP_W = 4.0, 3.0, 2.0
 BOX_CORNER_R = 10.0                    # outer corner radius of the box
+BOX_INNER_R = 10.0                     # inside corner radius of the box (Enclosure.SLDPRT, Vyom Nov 17)
+LIP_CLEAR = 0.4                        # gap between a lip and the box's inside wall
 ARM_HOLES_X, ARM_HOLES_Y, ARM_HOLE_D = 40.0, 60.0, 3.4   # Shoulder Bracket: 4 holes, 40 x 60 (hole size ASSUMED M3)
 LID_SCREW_D = 3.4                      # 4 x M3 down into the box wall corners (pilot holes needed in the box)
 CABLE_HOLE_D = 12.0                    # arm wiring down into the box
@@ -222,16 +224,22 @@ def lid_part():
         lid = lid.cut(pocket)
     pts = [(sx * ARM_HOLES_X / 2, sy * ARM_HOLES_Y / 2) for sx in (1, -1) for sy in (1, -1)]
     lid = lid.cut(cq.Workplane("XY").pushPoints(pts).circle(ARM_HOLE_D / 2).extrude(LID_T))
-    c = BOX_SIDE / 2 - BOX_CORNER_R + (BOX_CORNER_R - BOX_WALL / 2) * math.cos(math.radians(45))
-    lid = lid.cut(cq.Workplane("XY").pushPoints([(sx * c, sy * c) for sx in (1, -1) for sy in (1, -1)])
+    lid = lid.cut(cq.Workplane("XY").pushPoints(corner_points())
                   .circle(LID_SCREW_D / 2).extrude(LID_T))
     lid = lid.cut(cq.Workplane("XY").workplane(offset=-LID_LIP_H).pushPoints(CABLE_HOLES)
                   .circle(CABLE_HOLE_D / 2).extrude(LID_T + LID_LIP_H))
     return lid
 
 
+def corner_c():
+    """Corner screw position (x = y, from the axis): middle of the wall along the corner diagonal."""
+    out = BOX_SIDE / 2 - BOX_CORNER_R + BOX_CORNER_R / math.sqrt(2)
+    inn = BOX_SIDE / 2 - BOX_WALL - BOX_INNER_R + BOX_INNER_R / math.sqrt(2)
+    return (out + inn) / 2          # 79.57 -> 5.43 mm in from each outer face
+
+
 def corner_points():
-    c = BOX_SIDE / 2 - BOX_CORNER_R + (BOX_CORNER_R - BOX_WALL / 2) * math.cos(math.radians(45))
+    c = corner_c()
     return [(sx * c, sy * c) for sx in (1, -1) for sy in (1, -1)]
 
 
@@ -240,9 +248,11 @@ def tier_part():
     inner = BOX_SIDE - 2 * TIER_WALL
     t = (cq.Workplane("XY").rect(BOX_SIDE, BOX_SIDE).extrude(TIER_H).edges("|Z").fillet(BOX_CORNER_R))
     t = t.cut(cq.Workplane("XY").workplane(offset=TIER_DECK_T).rect(inner, inner).extrude(TIER_H))
-    lip_out = (cq.Workplane("XY").rect(BOX_SIDE - 2 * BOX_WALL - 0.8, BOX_SIDE - 2 * BOX_WALL - 0.8).extrude(-LID_LIP_H)
-               .edges("|Z").fillet(BOX_CORNER_R - BOX_WALL + 1))
-    lip_in = cq.Workplane("XY").rect(BOX_SIDE - 2 * BOX_WALL - 4.8, BOX_SIDE - 2 * BOX_WALL - 4.8).extrude(-LID_LIP_H)
+    lip_w = BOX_SIDE - 2 * BOX_WALL - 2 * LIP_CLEAR
+    lip_r = BOX_INNER_R + LIP_CLEAR                                  # R10.4: clears the box's R10 inside corners
+    lip_out = cq.Workplane("XY").rect(lip_w, lip_w).extrude(-LID_LIP_H).edges("|Z").fillet(lip_r)
+    lip_in = (cq.Workplane("XY").rect(lip_w - 2 * LID_LIP_W, lip_w - 2 * LID_LIP_W).extrude(-LID_LIP_H)
+              .edges("|Z").fillet(lip_r - LID_LIP_W))
     t = t.union(lip_out.cut(lip_in))
     t = t.union(cq.Workplane("XY").pushPoints(corner_points()).circle(4.5).extrude(TIER_H - LID_LIP_H - 0.3))
     t = t.cut(cq.Workplane("XY").workplane(offset=-LID_LIP_H).pushPoints(corner_points())
@@ -277,9 +287,12 @@ def board_blocks():
 
 
 def box_standin():
-    b = cq.Workplane("XY").rect(BOX_SIDE, BOX_SIDE).extrude(BOX_H)
+    b = cq.Workplane("XY").rect(BOX_SIDE, BOX_SIDE).extrude(BOX_H).edges("|Z").fillet(BOX_CORNER_R)
     b = b.cut(cq.Workplane("XY").workplane(offset=BOX_FLOOR)
-              .rect(BOX_SIDE - 2 * BOX_WALL, BOX_SIDE - 2 * BOX_WALL).extrude(BOX_H))
+              .rect(BOX_SIDE - 2 * BOX_WALL, BOX_SIDE - 2 * BOX_WALL).extrude(BOX_H)
+              .edges("|Z").fillet(BOX_INNER_R))               # round inside corners, like the real box
+    b = b.cut(cq.Workplane("XY").workplane(offset=BOX_H - 12).pushPoints(corner_points())
+              .circle(1.25).extrude(12))                      # M3 pilots for the lid/tray bolts
     b = b.union(cq.Workplane("XY").workplane(offset=BOX_FLOOR).rect(BOSS_SIDE, BOSS_SIDE).extrude(BOSS_H))
     b = b.cut(cq.Workplane("XY").circle(BOX_HOLE_D / 2).extrude(BOX_FLOOR + BOSS_H))
     ring = cq.Workplane("XY").circle(SLOT_R_OUT).circle(SLOT_R_IN).extrude(BOX_FLOOR)
