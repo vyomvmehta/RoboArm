@@ -15,7 +15,11 @@ Every input (web sliders now, gestures in V2) only sets a TARGET here. This clas
   5. The ramp (2026-11-15): inputs set a GOAL; each heartbeat tick moves the sent TARGET one
      step toward it (arm/motion.py step_toward) at the speeds in config/arm.yaml, so a big
      request becomes a smooth move, not a jump. Joint limits are a box, so every pose on
-     the way between two valid poses is valid too.
+     the way between two valid poses is inside the limits too.
+  6. Base clearance (2026-11-17, D23): the base isn't a box. A goal whose end pose drives the
+     forearm or hand into the base is refused, and since the ramp is a straight line in joint
+     space, each step is checked too: a step that would enter the base HOLDS the arm where it
+     is and says why (status()["blocked"]). Steps out of a colliding pose are allowed.
 """
 from __future__ import annotations
 
@@ -24,8 +28,10 @@ import logging
 import math
 
 from arm.calibration import Calibration
+from arm.clearance import base_collision
 from arm.comms.link import Link
 from arm.config import JOINTS
+from arm.kinematics import JointAngles
 from arm.motion import step_toward
 
 log = logging.getLogger(__name__)
@@ -46,6 +52,12 @@ class Controller:
                          + [arm.raw["gripper_speed_mm_per_s"] * self.period_s])
         self._task: asyncio.Task | None = None
         self.fault: str | None = None   # why the heartbeat stopped itself; shown on the page
+        self.blocked: str | None = None  # why the ramp is holding short of the goal (base clearance)
+
+    def _collision(self, values: list[float]) -> str | None:
+        arm = self.cal.arm
+        angles = JointAngles(*(math.radians(v) for v in values[:4]))
+        return base_collision(arm.geometry, angles, arm.base_clearance)
 
     def park_values(self) -> list[float]:
         """Park pose as [j0..j3 degrees, gripper mm], from config/arm.yaml."""
@@ -72,6 +84,7 @@ class Controller:
         self.target_values, self.target_us = park, park_us
         self.goal_values = list(park)
         self.fault = None
+        self.blocked = None
         self.link.send("A")
         self.armed = True
         self._task = asyncio.create_task(self._heartbeat())
@@ -98,7 +111,11 @@ class Controller:
             self.cal.to_pulses(values)  # validate the END pose; the poses on the way are inside the same box
         except ValueError as e:
             return str(e)              # rejected: the goal (and the ramp) stays as it was
+        why = self._collision(values)
+        if why:
+            return why
         self.goal_values = list(values)
+        self.blocked = None
         return None
 
     def _advance(self) -> None:
@@ -110,6 +127,13 @@ class Controller:
             us = self.cal.to_pulses(nxt)
         except ValueError as e:        # only a ramp bug gets here: stop where we are
             log.warning("ramp produced an invalid pose, holding: %s", e)
+            self.goal_values = list(self.target_values)
+            return
+        why = self._collision(nxt)
+        if why and not self._collision(self.target_values):
+            # Clear now, into the base next: hold here. (Already colliding: let it move out.)
+            log.warning("ramp holding short of the goal: %s", why)
+            self.blocked = f"stopped on the way: the straight path {why[5:]}"
             self.goal_values = list(self.target_values)
             return
         self.target_values, self.target_us = nxt, us
@@ -146,6 +170,7 @@ class Controller:
 
     def status(self) -> dict:
         return {**self.link.status(), "armed": self.armed, "fault": self.fault,
+                "blocked": self.blocked,
                 "target_us": self.target_us,
                 "target_values": self.target_values, "goal_values": self.goal_values,
                 "moving": self.goal_values is not None and self.target_values != self.goal_values}

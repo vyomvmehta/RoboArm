@@ -189,3 +189,9 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 - **Heatsink** for the LM2596 from RidgidWare (cheapest way to raise its sustained current).
 
 **Test result 2026-11-08 (no meter yet):** trigger at 9 V, LM2596 at 6.0 V; one MG996R (360° version, used as a load) stalled by hand for 1–2 s through the PCA9685: no cut-out, LM2596 not warm. Provisional **pass**; still to read the output voltage during a stall with a multimeter.
+
+## D23: Software base-clearance rule (2026-11-17, Vyom; from the SolidWorks full-assembly check)
+Joint limits are a box, but Siddharth's base (PR #10) isn't. The Nov 17 CAD check (Arm Human + flat-finger gripper on the base, 20 poses) found every normal pose and workspace pick clear, but shoulder 60 with the elbow at -130 / -135, and shoulder -20 with the elbow at -130, drive the gripper or forearm into the lid, tray, boards and base servo.
+- `arm/clearance.py` checks a 2D model in the arm plane, measured from the shoulder axis: box + lid |r| <= 85, z <= -50; base plate |r| <= 100, z <= -168.5; forearm band +-18 mm; hand body and fingers as rectangles in the gripper frame; 3 mm margin. Numbers in `base_clearance:` in `config/arm.yaml`. With the CAD's 13 / 12 cm links it gives the same answer as the CAD for all 20 poses.
+- The controller refuses a colliding goal, and holds the ramp (`status()["blocked"]`) if a straight-line step would enter the base from a clear pose; from a colliding pose it lets the arm move out. Point-and-go refuses colliding IK solutions. Park's wrist moves to -20 (at -40 the hand dips ~5 mm into the lid).
+- Host-side only: firmware v0 has no motion limiter. main's links are still 11 / 10 cm, so until cad/arm-shell lands, the rule runs on stale geometry (it is stricter there: the CAD's home and near poses would be refused with 11 / 10).
