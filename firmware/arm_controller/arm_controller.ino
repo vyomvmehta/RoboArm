@@ -431,7 +431,7 @@ void setup() {
     state = ST_FAULT;
   }
 
-  send_banner();                      // healthy boot gives exactly R,0,fw0.1,DISARMED*71
+  send_banner();                      // healthy boot gives exactly R,0,fw0.2,DISARMED*72
   if (!pca_ok) send_e(0, 8);          // PCA9685 missing: outputs stay off until reset
 }
 
