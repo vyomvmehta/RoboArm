@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  @apply bg-ink text-paper font-sans antialiased;
+}
+::selection {
+  background: rgba(255, 106, 26, 0.35);
+}
+:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .label {
+    @apply font-mono text-[11px] uppercase tracking-[0.16em] text-mute;
+  }
+  .hairline {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .panel {
+    @apply bg-panel/80 backdrop-blur-sm;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Staggered entrance: children of .stagger rise in once .in is set (see Reveal.tsx). */
+  .stagger > * {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+  .stagger.in > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* SVG line drawing: every shape carries pathLength="1" (see Draw.tsx). */
+  .draw [data-draw] {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--d, 0) * 120ms);
+  }
+  .draw [data-fade] {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    transition-delay: calc(var(--d, 0) * 120ms + 500ms);
+  }
+  .draw.in [data-draw] {
+    stroke-dashoffset: 0;
+  }
+  .draw.in [data-fade] {
+    opacity: 1;
+  }
+
+  /* Rendered Markdown from content/*.md and docs/*.md */
+  .prose-arm {
+    overflow-wrap: anywhere;
+    @apply text-[15px] leading-relaxed text-paper/80;
+  }
+  .prose-arm > * + * {
+    @apply mt-4;
+  }
+  .prose-arm h2 {
+    @apply mt-12 font-sans text-2xl font-medium tracking-tight text-paper;
+  }
+  .prose-arm h3 {
+    @apply mt-8 font-mono text-xs uppercase tracking-[0.16em] text-scope;
+  }
+  .prose-arm strong {
+    @apply font-medium text-paper;
+  }
+  .prose-arm a {
+    @apply text-scope underline decoration-scope/40 underline-offset-4;
+  }
+  .prose-arm ul {
+    @apply list-none space-y-2 pl-0;
+  }
+  .prose-arm ul > li {
+    @apply relative pl-5;
+  }
+  .prose-arm ul > li::before {
+    content: "";
+    @apply absolute left-0 top-[0.7em] h-px w-3 bg-signal;
+  }
+  .prose-arm ol {
+    @apply list-decimal space-y-2 pl-5 marker:font-mono marker:text-mute;
+  }
+  .prose-arm code {
+    @apply rounded-sm bg-white/5 px-1.5 py-0.5 font-mono text-[0.85em] text-paper;
+  }
+  .prose-arm pre {
+    @apply overflow-x-auto bg-black/40 p-4 font-mono text-xs leading-relaxed;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .prose-arm pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-arm blockquote {
+    @apply border-l-2 border-signal/60 pl-4 text-paper/70;
+  }
+  .prose-arm table {
+    @apply block w-full overflow-x-auto font-mono text-xs;
+  }
+  .prose-arm th {
+    @apply whitespace-nowrap px-3 py-2 text-left font-normal uppercase tracking-wider text-mute;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .prose-arm td {
+    @apply px-3 py-2 align-top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .stagger > *,
+  .draw [data-draw],
+  .draw [data-fade] {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
