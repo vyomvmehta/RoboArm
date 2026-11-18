@@ -34,12 +34,34 @@ The limiter tests send a `C` frame every 33 ms, the way `arm/control.py` does. W
 watchdog correctly drops the firmware into HOLD after 300 ms and the ramp freezes, which is the
 designed behaviour and makes the timing assertions meaningless.
 
-## What it does NOT prove
+## The AVR build
 
-- **It is not an AVR build.** `g++` compiles for the laptop, so this says nothing about flash or
-  RAM use, `avr-gcc` warnings, or real `millis()` timing. Verify the sketch in the Arduino IDE
-  (Ctrl+R) before flashing.
+`./run.sh` builds for the laptop, so it says nothing about flash, RAM, or the fact that `int` is
+16 bits on an AVR and 32 on a PC. `./avr_build.sh` closes that gap: same compiler and same target
+as the IDE, cross-compiled for the ATmega328P at 16 MHz.
+
+```
+./avr_build.sh           # needs avr-gcc + avr-libc; clones the Arduino core and
+                         # the Adafruit libraries into avr-build/ on first run
+```
+
+Measured 2026-11-18, with the motion limiter in:
+
+```
+Program:   11856 bytes (36.2% Full)     of 32 KB flash
+Data:        679 bytes (33.2% Full)     of 2 KB RAM, leaving ~1.3 KB for stack and heap
+```
+
+No warnings under `-Wall -Wextra` on the AVR target. The 16-bit-int trap is worth knowing about:
+`45 deg/s * 11389` is 512505, which does not fit in 16 bits, so `STEP_MILLI` casts to `uint32_t`
+before multiplying. Reading the linked binary back confirms `STEP_MILLI_US` holds 10250 and 20500
+and not the 1075 that late promotion would have produced.
+
+## What neither build proves
+
 - **There are no servos.** The stub records what was written to each channel; it does not know
   whether a real MG996R gets there, draws too much current, or hits a mechanical stop.
+- **The IDE is still the thing you flash with.** Same compiler, different build system: verify
+  there (Ctrl+R) before uploading.
 
 Green here means the logic is right. The bench is still the thing that decides.

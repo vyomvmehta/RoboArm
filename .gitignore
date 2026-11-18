@@ -26,3 +26,7 @@ build/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# JS deps: never commit these. A git add -A with site/ on disk pushes 140 MB and
+# GitHub rejects the whole push (hit 2026-11-18).
+node_modules/
