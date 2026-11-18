@@ -47,6 +47,7 @@ class Controller:
         self._task: asyncio.Task | None = None
         self.fault: str | None = None   # why the heartbeat stopped itself; shown on the page
         self.parking = False            # True while disarm() ramps to park: new targets refused
+        self._limp_sent = False         # D already sent since the last arm(): send it once
 
     def park_values(self) -> list[float]:
         """Park pose as [j0..j3 degrees, gripper mm], from config/arm.yaml."""
@@ -73,36 +74,46 @@ class Controller:
         self.target_values, self.target_us = park, park_us
         self.goal_values = list(park)
         self.fault = None
+        self._limp_sent = False
         self.link.send("A")
         self.armed = True
         self._task = asyncio.create_task(self._heartbeat())
         return None
 
     async def disarm(self, park_first: bool = True, timeout_s: float = 15.0) -> None:
-        """Ramp to the park pose, THEN send D (go limp).
+        """Ramp to the park pose, THEN send D (go limp). D-number: D24.
 
         D makes every servo limp at once, so sending it mid-reach drops the arm. Park is the
         pose a limp arm rests in, so going there first makes "limp" a non-event. The ramp
         (and the firmware limiter behind it) keeps that move at the normal speed caps.
 
-        Skipped (straight to D) when there is nothing safe to ramp with: not armed, the
-        heartbeat has stopped, the link is down or the Nano is not ARMED. timeout_s is a
-        backstop: if park isn't reached in time (it takes ~4 s from the far end of travel),
-        go limp anyway rather than hang.
+        park_first=False is the EMERGENCY STOP: D right now, wherever the arm is. It also
+        works WHILE a park ramp is running (the page's "Stop now" button, PR #15 review):
+        the waiting call sees armed go False, stops waiting, and D is sent only once.
+
+        Straight to D as well when there is nothing safe to ramp with: not armed, the
+        heartbeat has stopped, the link is down or the Nano is not ARMED. If the park move
+        is refused on the way (_advance holds) or not reached within timeout_s, go limp
+        where it stopped and say so in `fault`, so the page shows it.
         """
         try:
-            if (park_first and self.armed and self._task is not None and self.link.connected
-                    and self.link.state == "ARMED"):
+            if (park_first and not self.parking and self.armed and self._task is not None
+                    and self.link.connected and self.link.state == "ARMED"):
                 self.parking = True
-                self.goal_values = self.park_values()
+                park = self.park_values()
+                self.goal_values = list(park)
                 loop = asyncio.get_running_loop()
                 deadline = loop.time() + timeout_s
-                while (self.armed and self.target_values != self.goal_values
-                       and loop.time() < deadline):
+                while self.armed and self.target_values != park:
+                    if self.goal_values != park:         # _advance refused a step and held
+                        self._park_failed("the park move was refused on the way")
+                        break
+                    if loop.time() >= deadline:
+                        self._park_failed(f"park not reached within {timeout_s:.0f} s")
+                        break
                     await asyncio.sleep(self.period_s)
-                if self.target_values != self.goal_values:
-                    log.warning("disarm: park not reached, going limp where it is")
-                await asyncio.sleep(self.period_s)   # let the final park frame go out
+                if self.armed and self.target_values == park:
+                    await asyncio.sleep(self.period_s)   # let the final park frame go out
         finally:
             # Always runs, even if the wait is cancelled (server shutting down, browser gone):
             # a disarm that never sends D would leave the arm powered with nobody driving it.
@@ -111,8 +122,13 @@ class Controller:
             if self._task:
                 self._task.cancel()
                 self._task = None
-            if self.link.connected:
+            if self.link.connected and not self._limp_sent:
                 self.link.send("D")
+                self._limp_sent = True
+
+    def _park_failed(self, why: str) -> None:
+        log.error("disarm: %s; going limp where the arm is", why)
+        self.fault = f"disarm: {why}; went limp where it stopped"
 
     # ------------------------------------------------------------------ targets
     def set_target(self, values: list[float]) -> str | None:

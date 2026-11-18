@@ -177,3 +177,47 @@ def test_disarm_without_park_first_goes_limp_at_once(arm):
         return c, park
     c, park = asyncio.run(go())
     assert not c.armed and c.target_values != park
+
+
+def test_stop_now_during_parking_goes_limp_at_once_and_sends_d_once(arm):
+    # PR #15 review (Ishaan): once Disarm was pressed there was no way to stop immediately.
+    async def go():
+        nano = FakeNano()
+        c = Controller(nano, load_calibration(arm))
+        await c.arm()
+        park = c.park_values()
+        c.set_target([park[0] + 60] + park[1:])
+        await asyncio.sleep(1.0)                      # ~45 deg away from park
+        parking = asyncio.create_task(c.disarm())     # 1st press: start the park ramp
+        await asyncio.sleep(0.1)
+        assert c.parking and c.armed
+        t0 = asyncio.get_running_loop().time()
+        await c.disarm(park_first=False)              # 2nd press: Stop now
+        stop_s = asyncio.get_running_loop().time() - t0
+        await parking
+        return c, nano, park, stop_s
+    c, nano, park, stop_s = asyncio.run(go())
+    assert stop_s < 0.05 and not c.armed and not c.parking
+    assert c.target_values != park                    # it stopped where it was
+    assert sum(1 for line in nano.log if line.startswith(">> D,")) == 1
+
+
+def test_a_refused_park_move_goes_limp_and_says_why(arm):
+    async def go():
+        c = Controller(FakeNano(), load_calibration(arm))
+        await c.arm()
+        park = c.park_values()
+        c.set_target([park[0] + 30] + park[1:])
+        await asyncio.sleep(0.5)
+        class Refusing:                                # stands in for #16's clearance rule
+            arm, cal = c.cal.arm, c.cal.cal
+            @staticmethod
+            def to_pulses(values):
+                raise ValueError("simulated: base clearance refused the step")
+        c.cal = Refusing()
+        t0 = asyncio.get_running_loop().time()
+        await c.disarm()
+        return c, asyncio.get_running_loop().time() - t0
+    c, took = asyncio.run(go())
+    assert not c.armed and took < 1.0                 # no 15 s wait
+    assert "refused" in c.fault

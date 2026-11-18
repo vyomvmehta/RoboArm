@@ -189,3 +189,9 @@ Batch A (screw strip + bearing block), printed on a **Bambu Lab P2S, Bambu PLA B
 - **Heatsink** for the LM2596 from RidgidWare (cheapest way to raise its sustained current).
 
 **Test result 2026-11-08 (no meter yet):** trigger at 9 V, LM2596 at 6.0 V; one MG996R (360° version, used as a load) stalled by hand for 1–2 s through the PCA9685: no cut-out, LM2596 not warm. Provisional **pass**; still to read the output voltage during a stall with a multimeter.
+
+## D24: Disarm parks first; a second press is the emergency stop (2026-11-18, Vyom; PR #15, needs Ishaan + Siddharth to agree)
+**What:** pressing Disarm makes the laptop ramp the arm to the park pose (normal speed caps, firmware limiter behind it) and only then send `D`. While it is parking the button reads **"Stop now"**: pressing it sends `D` immediately, wherever the arm is. The browser disconnecting also parks first (dead-man rule). If the park move is refused on the way or takes over 15 s, the laptop goes limp where the arm stopped and shows the reason on the page.
+**Why:** `D` makes every servo limp at once; sent mid-reach it drops the arm onto the base or the table. Park is where a limp arm rests, so parking first makes going limp a non-event. But the button exists for the moment a finger is in the way, so an instant stop must stay one press away (Ishaan's review of PR #15).
+**Alternatives:** (a) firmware ramps to park on `D`: needs park as pulses in the sketch, a copy of the laptop's calibration in the hardest place to change it (PR #12 discussion); (b) `D` always instant: simplest, but every normal disarm drops the arm; (c) a separate always-limp button: works too, but two red buttons is easier to get wrong under pressure than one button whose label changes.
+**Protocol:** wire format unchanged; only *when* the laptop sends `D` changed (PROTOCOL.md section 3).

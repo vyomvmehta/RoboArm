@@ -10,7 +10,7 @@
   .val{font-family:monospace;text-align:right}
   .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
   button{font-size:1rem;padding:10px 18px;border-radius:8px;border:0;cursor:pointer}
-  #arm{background:#2c8256;color:#fff} #disarm{background:#c0392b;color:#fff}
+  #arm{background:#2c8256;color:#fff} #disarm{background:#c0392b;color:#fff} #disarm.stop{background:#7a0000;font-weight:700}
   button:disabled{opacity:.4;cursor:default}
   #state{font-family:monospace;font-weight:600;padding:6px 10px;border-radius:6px;background:#dde2dd}
   #state.ARMED{background:#2c8256;color:#fff} #state.HOLD{background:#e0a100;color:#000}
@@ -59,6 +59,12 @@ const sock = new WebSocket(`ws://${location.host}/ws`);
 const $ = (id) => document.getElementById(id);
 const say = (text, err) => { $("msg").textContent = text; $("msg").className = err ? "err" : ""; };
 let armed = false;
+let parking = false;             // true while Disarm is ramping to park: the button becomes "Stop now"
+function setParking(p) {
+  parking = p;
+  $("disarm").textContent = p ? "Stop now" : "Disarm";
+  $("disarm").classList.toggle("stop", p);
+}
 
 function setArmed(a) {             // sliders only work while armed
   armed = a;
@@ -73,6 +79,7 @@ sock.onmessage = (e) => {
   if (m.type === "status") {       // pushed by the server 5x a second
     $("state").textContent = m.state; $("state").className = m.state;
     if (m.armed !== armed) setArmed(m.armed);
+    if (!!m.parking !== parking) setParking(!!m.parking);
     $("info").textContent =
       `firmware ${m.firmware || "?"} · round trip ${m.rtt_ms ?? "-"} ms` +
       (m.target_us ? `\nsending (us): ${m.target_us.join(", ")}` : "") +
@@ -94,7 +101,11 @@ $("go").onclick = () => {
   sock.send(JSON.stringify({type: "point", x: v[0], y: v[1], z: v[2], pitch: v[3]}));
 };
 $("arm").onclick = () => sock.send(JSON.stringify({type: "arm"}));
-$("disarm").onclick = () => sock.send(JSON.stringify({type: "disarm"}));
+$("disarm").onclick = () => {
+  // 1st press: park, then go limp.  2nd press (while parking): go limp NOW, wherever it is.
+  sock.send(JSON.stringify({type: "disarm", now: parking}));
+  if (!parking) setParking(true);   // flip the label at once, not on the next status push
+};
 
 // ---------- THROTTLE (from step 2) ----------
 // Slider events fire on every pixel. They only UPDATE `latest`; a timer sends at most

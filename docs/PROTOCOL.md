@@ -38,7 +38,7 @@
 | --- | --- | --- |
 | `C` | `p0,p1,p2,p3,p4` | Target pulse widths in **µs** for J0 base … J4 gripper. Integers. Sent at 30–50 Hz while ARMED. |
 | `A` | — | Arm (only from DISARMED, and the arm must be resting in the park pose). |
-| `D` | — | Disarm: move to the park pose through the motion limiter, then stop the pulses. |
+| `D` | — | Disarm: stop the pulses (servos limp). **When it is sent (D24, Nov 18):** the laptop first ramps to the park pose with C frames, then sends D; a second press ("Stop now") sends D at once, wherever the arm is. The firmware itself just goes limp on D. Wire format unchanged. |
 | `H` | — | Move to the home pose through the motion limiter. Later `C` frames take over again. |
 | `P` | — | Ping (for measuring round-trip time without moving anything). |
 
