@@ -2,11 +2,20 @@
   arm_controller.ino  --  RoboArm firmware v0
   Implements docs/PROTOCOL.md (DRAFT v1). Owner: Ishaan (D8). Checker: Vyom.
 
-  WHAT v0 DOES
+  WHAT THIS DOES
     Boots DISARMED (outputs off, servos limp), speaks the PROTOCOL.md line format
     over USB serial, enforces the safety states and the 300 ms watchdog, and drives
-    the PCA9685 at 50 Hz. No motion limiter yet: that lands with the Nov 15 task,
-    and until then a C frame is written straight to the outputs.
+    the PCA9685 at 50 Hz.
+
+    A C frame sets a TARGET; it is never written straight to the outputs. The motion
+    limiter walks each joint towards its target at that joint's own speed cap, so no
+    frame -- however far it jumps, and however fast they arrive -- can make a joint
+    move faster than config/arm.yaml allows.
+
+  WHAT IS STILL MISSING (each needs the assembled arm, or a decision)
+    D goes straight limp instead of ramping to park first, and H acknowledges without
+    moving. Both need park/home as PULSES, which means IK and the angle->pulse map --
+    both of which live on the laptop, not here. See handle_d and handle_h.
 
   HARDWARE
     Laptop -- USB -- Arduino Nano -- I2C -- PCA9685 -- servos
@@ -32,7 +41,8 @@
 
 // ---------------------------------------------------------------- configuration
 
-#define FW_VERSION "fw0.1"
+#define FW_VERSION "fw0.2"   // 0.2 = the motion limiter below. The banner is the only way
+                             // to tell from the bench which firmware is on the board.
 
 static const uint8_t  PCA_ADDR      = 0x40;
 static const uint32_t PCA_OSC_HZ    = 27000000UL;  // nominal; corrected at calibration (PROTOCOL.md s8)
@@ -55,15 +65,45 @@ static const uint8_t  CHANNEL[NJOINTS]   = {0, 1, 2, 3, 4};
 static const uint16_t PULSE_MIN[NJOINTS] = { 450,  450,  450,  450,  450};
 static const uint16_t PULSE_MAX[NJOINTS] = {2500, 2500, 2500, 2500, 2500};
 
+// Motion limiter (PROTOCOL.md s6: ARMED "ramps every joint towards the latest C target").
+//
+// Each joint is capped on its OWN speed, independently. This deliberately does NOT
+// synchronise the joints the way arm/motion.py step_toward does: that shapes the path,
+// which is the laptop's job. This is a ceiling and nothing more. Two layers both shaping
+// the path would only fight each other.
+//
+// The caps are config/arm.yaml speed_limits_deg_per_s and us_per_deg is
+// config/calibration.yaml. Both are the laptop's files; if either moves, move it here
+// too. Both get retuned at calibration (Nov 21-23), so expect these to change.
+static const uint16_t TICK_MS = 20;               // = the 50 Hz PWM frame. Writing more
+                                                  // often cannot change what a servo sees.
+static const uint32_t US_PER_DEG_MILLI = 11389;   // calibration.yaml us_per_deg 11.3889, x1000
+
+// Step per tick, in THOUSANDTHS of a microsecond, and positions are kept in milli-us to
+// match. The fraction is the whole reason: at 45 deg/s a tick is 10.25 us, and rounding
+// that down to 10 would run the joint 2.4 % slow, further out the longer the move runs.
+#define STEP_MILLI(deg_per_s) \
+  ((uint32_t)(((uint32_t)(deg_per_s) * US_PER_DEG_MILLI * TICK_MS) / 1000UL))
+static const uint32_t STEP_MILLI_US[NJOINTS] = {
+  STEP_MILLI(45),   // j0 base      -> 10250 = 10.25 us/tick = 512.5 us/s = 45 deg/s
+  STEP_MILLI(45),   // j1 shoulder     a full 450-2500 sweep takes 4.0 s
+  STEP_MILLI(45),   // j2 elbow
+  STEP_MILLI(90),   // j3 wrist     -> 20500 = 20.50 us/tick = 1025 us/s = 90 deg/s
+  STEP_MILLI(90)    // j4 gripper      the same sweep takes 2.0 s
+};
+
 // ---------------------------------------------------------------- state
 
 enum State { ST_DISARMED, ST_ARMED, ST_HOLD, ST_FAULT };
 
 static State    state         = ST_DISARMED;
 static bool     pca_ok        = false;
-static uint16_t current_us[NJOINTS];               // 0 = that channel is limp
-static bool     outputs_live  = false;
+static uint16_t current_us[NJOINTS];               // what is on the pins now; 0 = limp
+static uint16_t target_us[NJOINTS];                // what the latest accepted C asked for
+static uint32_t pos_milli[NJOINTS];                // where the ramp has got to, in milli-us
+static bool     have_target   = false;             // false = no C since arming, outputs off
 static uint32_t last_c_ms     = 0;
+static uint32_t last_tick_ms  = 0;
 
 static char     line_buf[LINE_MAX + 1];
 static uint8_t  line_len      = 0;
@@ -120,17 +160,48 @@ static void outputs_off() {
   if (pca_ok) {
     for (uint8_t j = 0; j < NJOINTS; ++j) pca.setPWM(CHANNEL[j], 0, 0);
   }
-  for (uint8_t j = 0; j < NJOINTS; ++j) current_us[j] = 0;
-  outputs_live = false;
+  for (uint8_t j = 0; j < NJOINTS; ++j) { current_us[j] = 0; pos_milli[j] = 0; }
+  have_target = false;
 }
 
-static void write_pose(const uint16_t us[NJOINTS]) {
+// Puts the ramp's position on the pins. Only the channels that actually changed are
+// written: with one slider moving, that is one I2C write per tick instead of five.
+//
+// No clamp is needed here. pos_milli only ever holds an accepted target x1000, or a value
+// between two of them, and every accepted target passed PULSE_MIN/PULSE_MAX in handle_c.
+static void write_current() {
   if (!pca_ok) return;
   for (uint8_t j = 0; j < NJOINTS; ++j) {
-    pca.writeMicroseconds(CHANNEL[j], us[j]);
-    current_us[j] = us[j];
+    uint16_t us = (uint16_t)((pos_milli[j] + 500UL) / 1000UL);   // round to nearest us
+    if (us == current_us[j]) continue;
+    pca.writeMicroseconds(CHANNEL[j], us);
+    current_us[j] = us;
   }
-  outputs_live = true;
+}
+
+// One step per tick towards the target, per joint, capped. Driven from loop().
+static void advance_ramp() {
+  // ARMED only. HOLD has to freeze wherever the ramp got to (PROTOCOL.md s6: HOLD keeps
+  // the last CURRENT pulses) -- the laptop has gone quiet, so creeping on towards a stale
+  // target is the last thing we want. DISARMED and FAULT have no outputs at all.
+  if (state != ST_ARMED || !have_target) return;
+
+  uint32_t now = millis();
+  if ((uint32_t)(now - last_tick_ms) < TICK_MS) return;
+  last_tick_ms = now;
+  // Deliberately not "last_tick_ms += TICK_MS": if the loop ever stalls, we take one step
+  // late rather than several at once. A stall then makes the arm lag, never lurch.
+
+  for (uint8_t j = 0; j < NJOINTS; ++j) {
+    uint32_t goal = (uint32_t)target_us[j] * 1000UL;
+    uint32_t step = STEP_MILLI_US[j];
+    if (goal > pos_milli[j]) {
+      pos_milli[j] = (goal - pos_milli[j] <= step) ? goal : pos_milli[j] + step;
+    } else if (goal < pos_milli[j]) {
+      pos_milli[j] = (pos_milli[j] - goal <= step) ? goal : pos_milli[j] - step;
+    }
+  }
+  write_current();
 }
 
 // ---------------------------------------------------------------- parsing
@@ -181,15 +252,29 @@ static void handle_c(char *field[], uint8_t nfields, uint16_t seq) {
   // there is what brings us back to ARMED (PROTOCOL.md s6).
   if (state != ST_ARMED && state != ST_HOLD) { send_e(seq, 4); return; }
 
-  uint16_t target[NJOINTS];
+  uint16_t want[NJOINTS];
   for (uint8_t j = 0; j < NJOINTS; ++j) {
     uint32_t v;
     if (!parse_uint(field[2 + j], 65535UL, &v)) { send_e(seq, 2); return; }
     if (v < PULSE_MIN[j] || v > PULSE_MAX[j])   { send_e(seq, 3); return; }  // reject whole frame
-    target[j] = (uint16_t)v;
+    want[j] = (uint16_t)v;
+  }
+  // Nothing above this line has touched the target, so a rejected frame leaves the old
+  // one standing and the ramp carries on towards it (error 3, PROTOCOL.md s5).
+  for (uint8_t j = 0; j < NJOINTS; ++j) target_us[j] = want[j];
+
+  if (!have_target) {
+    // First C since arming. With no position feedback, this frame is the only thing that
+    // can say where the arm is, so take it as the truth and start the ramp from there
+    // rather than sweeping to it from some assumed pose. The laptop holds up its end:
+    // arm/control.py arm() sets the target to park BEFORE sending A, so the first C is
+    // the park pose, and a limp arm is already resting at park (PROTOCOL.md s6).
+    for (uint8_t j = 0; j < NJOINTS; ++j) pos_milli[j] = (uint32_t)target_us[j] * 1000UL;
+    have_target  = true;
+    last_tick_ms = millis();
+    write_current();      // the starting pose: declared, not travelled to
   }
 
-  write_pose(target);
   last_c_ms = millis();
   state = ST_ARMED;
   send_k(seq);
@@ -202,6 +287,7 @@ static void handle_a(uint8_t nfields, uint16_t seq) {
   // No position feedback exists, so the firmware cannot verify the park pose.
   // PROTOCOL.md s6 makes that the operator's job. Outputs stay off until the
   // first C frame arrives, so arming never jerks the arm.
+  have_target = false;    // and that first C is what re-seeds the ramp
   state = ST_ARMED;
   last_c_ms = millis();   // start the watchdog's 300 ms grace period now
   send_k(seq);
@@ -210,7 +296,13 @@ static void handle_a(uint8_t nfields, uint16_t seq) {
 static void handle_d(uint8_t nfields, uint16_t seq) {
   if (nfields != 2) { send_e(seq, 2); return; }
 
-  // v0 skips "move to park first" (brief): that needs the motion limiter.
+  // Still goes straight limp rather than ramping to park first (PROTOCOL.md s3). The
+  // limiter exists now, but park is defined in config/arm.yaml as JOINT ANGLES, and
+  // turning those into pulses needs the angle->pulse map on the laptop. The laptop is
+  // also the right owner: arm/control.py disarm() can set its target to park, let this
+  // limiter ramp there, and only then send D -- same end behaviour, no duplicated map.
+  // Hard-coding a park pose here would copy that contract into the place that is hardest
+  // to correct, and every number it would copy is a placeholder until calibration.
   outputs_off();
   if (state != ST_FAULT) state = ST_DISARMED;   // FAULT only clears on reset
   send_k(seq);
@@ -220,10 +312,11 @@ static void handle_h(uint8_t nfields, uint16_t seq) {
   if (nfields != 2)        { send_e(seq, 2); return; }
   if (state != ST_ARMED)   { send_e(seq, 4); return; }
 
-  // v0 acknowledges H but does NOT move. The home pose is an (x,y,z,pitch)
-  // target in config/arm.yaml: reaching it needs IK plus the joint-angle ->
-  // pulse map in calibration.yaml, and it must be ramped by the motion
-  // limiter rather than jumped to. All three land with the Nov 15 task.
+  // Acknowledges H but still does NOT move. home is an (x, y, z, pitch) target in
+  // config/arm.yaml, so reaching it needs IK and the angle->pulse map, both of which are
+  // on the laptop. With the limiter in place the laptop does not really need H any more:
+  // it can run IK itself and just move its own target, and the ramp here makes that
+  // smooth. Whether H still earns its place in the protocol is a call for all three.
   send_k(seq);
 }
 
@@ -319,7 +412,8 @@ static void service_watchdog() {
 void setup() {
   Serial.begin(115200);
 
-  for (uint8_t j = 0; j < NJOINTS; ++j) current_us[j] = 0;
+  for (uint8_t j = 0; j < NJOINTS; ++j) { current_us[j] = 0; target_us[j] = 0; pos_milli[j] = 0; }
+  last_tick_ms = millis();
 
   Wire.begin();
   Wire.setWireTimeout(25000, true);   // never hang if SDA/SCL are shorted
@@ -344,4 +438,6 @@ void setup() {
 void loop() {
   read_serial();
   service_watchdog();
+  advance_ramp();     // after the watchdog, so a pass that drops us into HOLD freezes the
+                      // pose on that same pass instead of taking one more step first
 }
