@@ -4,7 +4,7 @@ Two-jaw parallel gripper: one pinion on the MG90S horn drives two identical rack
 opposite directions, so the jaws stay parallel and centred (CLAUDE.md 4.1, D17).
 
 Run with SolidWorks installed (it opens SolidWorks):   py tools/cad/build_gripper.py
-Output: SolidWorks Parts/Gripper/ (Body, Pinion, Rack, Fingers, Thumb + Gripper.SLDASM)
+Output: SolidWorks Parts/Gripper/ (Body, Pinion, Rack, Fingers, Thumb, Cover + Gripper.SLDASM)
 
 World frame (all parts are modelled in place, so the assembly needs no mates):
   origin = servo shaft axis at the deck's top face (where the MG90S tabs sit)
@@ -43,11 +43,7 @@ CENTRE_GAP = 0.10                # extra pinion-to-rack distance (printing slop)
 
 # Travel: opening 0..40 mm (config/arm.yaml gripper.open_mm) -> 20 mm per jaw.
 OPEN_MAX = 40.0
-X_E_MID = 13.0                   # rack end position in the saved assembly (20 mm open)
 RACK_LEN = 36.0
-FINGER_T = 3.0                   # jaw plate thickness (X)
-FINGER_H = 30.0                  # jaw plate height (Z)
-FINGER_Y = (-12.0, None)         # jaw plate spans from y=-12 to the rack's back edge
 RACK_BACK = 6.0                  # rack body thickness behind the tooth roots
 
 # Heights (Z). ESTIMATES until the MG90S horn is measured: shaft tip ~12.5 above the
@@ -78,70 +74,40 @@ HORN_ACCESS_D = 5.5              # screwdriver access to the horn's own centre s
 HORN_PILOT_R = 6.0               # first horn holes (measured)
 HORN_PILOT_D = 1.6               # small self-tapping screws up through the horn into the pinion
 
-# ---- Tilting fingers (D17 update, Nov 11: mitten, 15 deg flare open, tips ~5 deg IN at 30 mm).
-# Each finger pivots on its rack at P; a follower pin F, H_F below P, rides in a VERTICAL slot
-# fixed to the body at x = CAM_X. The rack moves P sideways but F can't, so the finger tilts:
-#     sin(tilt) = (x_P - CAM_X) / H_F        (positive tilt = fingertip OUTWARD)
-# 4 deg per mm of jaw travel: +15.0 at 40 mm open, -5.2 at 30 mm (tips in, option b),
-# -17.5 at 24 mm. Below ~24 mm the fingertips would collide, so the racks stop at 24-40 mm.
-H_F = 14.3
-CAM_X = 17.8
-X_CLOSED, X_OPEN = 16.0, 23.0          # rack end positions: opening 2*(x_e - 3) = 26 .. 40
-                                       # (26, not 24: the curled tips would pass only 1.3 mm apart)
-X_E0 = CAM_X + 1.5                     # parts are modelled with zero tilt (x_e = 19.3)
-XP0 = X_E0 - 1.5                       # pivot x (middle of the 3 mm finger plate)
-Z_PIV = 24.5                           # pivot height: inside the rack's connector block
-Z_FOL = Z_PIV - H_F                    # follower height (10.2)
-PLATE_Z0 = Z_PIV + 4.0                 # finger plate starts above the block, clear at any tilt
-FINGERS_TOP, THUMB_TOP = 50.0, 46.0   # (straight-finger heights, kept for reference)
-# Curled fingers (Vyom chose option A, Nov 12): segments (length, angle from the finger's own
-# vertical; negative = curls INWARD), a 3 mm strip with a rounded tip. Palm / middle / tip.
-# At rest (15 deg flare) they look like a relaxed hand; gripping, the FINGERTIPS take the load.
-FINGER_SEGS = [(9, 0), (7, -20), (6, -40)]
-THUMB_SEGS = [(8, 0), (8, -30)]
-TAB_Y = (None, None)                   # set below from Y_BACK
+# ---- Flat straight fingers (D21, Nov 15-16, team): a hand's four fingers on rack A and a thumb
+# on rack B, but FLAT and STRAIGHT (no tilt, no curl): every finger's face is in one plane, the
+# two faces stay parallel at any opening, so the whole face grips and the opening is linear in
+# servo angle. Each rack carries a STEM that rises through the cover's slot; the finger plate
+# screws onto it from above with 2x M2, a tongue in a pocket takes the twist. The gear and racks
+# live INSIDE a cover (Gripper Cover; Arm Human uses its own Palm Cover).
+X_CLOSED, X_OPEN = 4.0, 23.0           # rack end positions: opening 2*(x_e - 3) = 2 .. 40
+X_E0 = 13.0                            # parts are modelled at 20 mm open
+JAW_T = 3.0                            # plate thickness (X); the grip face is at x_e - 3
+JAW_Y = 20.0                           # fingers span y -20..20: the whole deck width
+JAW_Z = (25.0, 65.0)                   # face from z 25 to the longest fingertip (grasp mid-face, l3 84)
+BAND_Z = 33.0                          # solid "palm" band; the fingers are separate above it
+FINGERS = [  # (y0, y1, tip z): index, middle, ring, little; 1.5 mm gaps
+    (10.75, 20.0, 61.0), (0.75, 9.25, 65.0), (-9.25, -0.75, 63.0), (-20.0, -10.75, 57.0)]
+THUMB = (-7.0, 7.0, 58.0)              # one wide, flat thumb opposite the fingers
+TIP_CHAMFER = 2.0
+FOOT_T = 3.0                           # the plate's foot on top of the stem
+STEM_X = (-5.0, 8.0)                   # stem, relative to x_e: 5 mm over the rack, 8 mm past its end
+STEM_IN = 1.5                          # stem starts 1.5 in from the tooth roots: the cover's slot
+                                       # then stays 1 mm clear of the teeth (no gear in sight)
+STEM_Z0 = 14.0                         # past the rack's end the stem rides 0.5 above the rail
+JAW_SCREWS = (2.0, 5.5)                # the 2 M2, x relative to x_e (mid-stem in y)
+TONGUE_Z = 22.0                        # the plate's tongue reaches down into the stem to here
+GROOVE_W, GROOVE_D, GROOVE_PITCH = 1.0, 0.8, 2.5   # horizontal grip grooves on the face
+COVER_POSTS = ((30.0, 0.0), (-30.0, 0.0))          # the cover's lid screws onto these posts
+COVER_LID_Z = 22.6                     # underside of the lid (rack hold-down screw heads top ~22.1)
+COVER_LID_T = 1.4
+COVER_OUT = (40.0, 24.0, 8.0)          # Gripper Cover: half-x, half-y, corner radius (outside)
+COVER_WALL = 1.6
 M2_CLEAR = 2.4
-
-
-def tilt_deg(x_e):
-    return math.degrees(math.asin((x_e - 1.5 - CAM_X) / H_F))
 
 
 def opening_mm(x_e):
     return 2 * (x_e - 3.0)
-
-
-def finger_strip(segs):
-    """Bent 3 mm strip with a rounded tip, for the rack-A finger at zero tilt, in model (x, z).
-    Returns (outline, centreline points). Starts 1 mm down inside the tab so they fuse."""
-    pts = [(XP0, PLATE_Z0 - 1.0), (XP0, PLATE_Z0)]
-    x, z = XP0, PLATE_Z0
-    for L, a in segs:
-        r = math.radians(a)
-        x, z = x + L * math.sin(r), z + L * math.cos(r)
-        pts.append((x, z))
-    angs = [segs[0][1]] + [a for _, a in segs]
-    inner, outer = [], []
-    for i, (px, pz) in enumerate(pts):
-        if i in (0, len(pts) - 1):
-            r = math.radians(angs[min(i, len(angs) - 1)])
-            n, t = (-math.cos(r), math.sin(r)), 1.5
-        else:                                   # mitre at each knuckle
-            r1, r2 = math.radians(angs[i]), math.radians(angs[min(i + 1, len(angs) - 1)])
-            n1, n2 = (-math.cos(r1), math.sin(r1)), (-math.cos(r2), math.sin(r2))
-            n = ((n1[0] + n2[0]) / 2, (n1[1] + n2[1]) / 2)
-            m = math.hypot(*n)
-            n = (n[0] / m, n[1] / m)
-            t = 1.5 / max(0.5, n[0] * n1[0] + n[1] * n1[1])
-        inner.append((px + t * n[0], pz + t * n[1]))
-        outer.append((px - t * n[0], pz - t * n[1]))
-    r = math.radians(angs[-1])
-    u, n = (math.sin(r), math.cos(r)), (-math.cos(r), math.sin(r))
-    tx, tz = pts[-1]
-    arc = [(tx + 1.5 * (math.cos(q) * n[0] + math.sin(q) * u[0]),
-            tz + 1.5 * (math.cos(q) * n[1] + math.sin(q) * u[1]))
-           for q in [k * math.pi / 8 for k in range(1, 8)]]
-    return inner + arc + list(reversed(outer)), pts
 
 
 # Derived rack geometry (rack A, on the +Y side; jaw B is the same part turned 180 deg).
@@ -150,8 +116,23 @@ Y_TIP = Y_PITCH - RACK_ADD
 Y_ROOT = Y_PITCH + RACK_DED
 Y_BACK = Y_ROOT + RACK_BACK
 Y_SCREW = (Y_ROOT + Y_BACK) / 2
-TAB_Y = (Y_BACK + 0.5, Y_BACK + 3.5)          # finger tab, beside the rack's block
-CAM_Y = (Y_BACK + 4.0, Y_BACK + 7.0)          # body plate carrying the follower slot
+STEM_Y = (Y_ROOT + STEM_IN, Y_BACK)           # stem (and the finger plate's foot) in y
+JAW_SCREW_Y = (STEM_Y[0] + STEM_Y[1]) / 2
+
+
+def lid_slots():
+    """The cover lid's two slots (rack A's stem, rack B's stem) over the whole travel, 0.5 clear."""
+    lo, hi = X_CLOSED + STEM_X[0] - 0.5, X_OPEN + STEM_X[1] + 0.5
+    ya, yb = STEM_Y[0] - 0.5, STEM_Y[1] + 0.5
+    return [(lo, ya, hi, yb), (-hi, -yb, -lo, -ya)]
+
+
+def rrect_pts(hx, hy, r, n=8):
+    pts = []
+    for cx, cy, a0 in ((hx - r, hy - r, 0), (-hx + r, hy - r, 90), (-hx + r, -hy + r, 180), (hx - r, -hy + r, 270)):
+        pts += [(cx + r * math.cos(math.radians(a0 + 90 * k / n)), cy + r * math.sin(math.radians(a0 + 90 * k / n)))
+                for k in range(n + 1)]
+    return pts
 
 MM = 0.001
 
@@ -200,7 +181,8 @@ class Part:
     # --- sketches on the Right Plane (model YZ) or Top Plane (model XZ). `pm` is a PlaneMap
     #     from probe_plane(): it converts model coordinates into that plane's sketch axes.
     def side_cut(self, pm, shapes, mid=None, depth=None):
-        """shapes: list of ("circle", a, b, d) / ("rect", a0, b0, a1, b1) in the plane's two
+        """shapes: list of ("circle", a, b, d) / ("rect", a0, b0, a1, b1) / ("poly", [(a, b), ..])
+        in the plane's two
         MODEL axes. Through everything, or mid-plane `depth` centred at model normal = mid."""
         self.doc.ClearSelection2(True)
         self.doc.Extension.SelectByID2(pm.plane, "PLANE", 0, 0, 0, False, 0, NOTHING, 0)
@@ -210,6 +192,10 @@ class Part:
             if sh[0] == "circle":
                 u, v = pm.uv(sh[1], sh[2])
                 self.skm.CreateCircleByRadius(u * MM, v * MM, 0, sh[3] / 2 * MM)
+            elif sh[0] == "poly":
+                uv = [pm.uv(a, b) for a, b in sh[1]]
+                for (u1, v1), (u2, v2) in zip(uv, uv[1:] + uv[:1]):
+                    self.skm.CreateLine(u1 * MM, v1 * MM, 0, u2 * MM, v2 * MM, 0)
             else:
                 corners = [pm.uv(a, b) for a, b in ((sh[1], sh[2]), (sh[3], sh[2]),
                                                     (sh[3], sh[4]), (sh[1], sh[4]))]
@@ -406,17 +392,21 @@ def build_pinion(sw):
     return p.finish()
 
 
-def build_rack(sw, top):
-    """Rack + connector block (modelled at x_e = X_E0). The finger pivots on the block.
-    Rack B is the same part turned 180 deg about Z."""
+def build_rack(sw):
+    """Rack + stem (modelled at x_e = X_E0). Rack B is the same part turned 180 deg about Z."""
     x_e = X_E0
     j = Part(sw, "Gripper Rack")
     j.boss(lambda s: s.poly(rack_outline(x_e)), Z_R0, RACK_W)
-    j.boss(lambda s: s.rect(x_e - 8, Y_ROOT, x_e, Y_BACK), Z_R1, 6.0)
-    # Pivot: M2 self-tapping screw along Y, from the finger's tab into the block.
-    j.side_cut(top, [("circle", XP0, Z_PIV, M2_PILOT)])
+    # Stem over the rack's back strip and past its end, up to the jaw's foot
+    j.boss(lambda s: s.rect(x_e + STEM_X[0], STEM_Y[0], x_e + STEM_X[1], STEM_Y[1]), STEM_Z0,
+           JAW_Z[0] - STEM_Z0)
+    # Pocket for the jaw's tongue (0.15 clearance) and the pilots for the jaw's 2 M2
+    j.cut(lambda s: s.rect(x_e - JAW_T - 0.15, STEM_Y[0] + 0.15, x_e + 0.15, STEM_Y[1] - 0.15),
+          TONGUE_Z - 0.3, JAW_Z[0] - TONGUE_Z + 0.4)
+    j.cut(lambda s: [s.circle(x_e + dx, JAW_SCREW_Y, M2_PILOT) for dx in JAW_SCREWS],
+          JAW_Z[0] - 9.0, 9.1)
     # Hold-down slot: the body's screw at x = -SCREW_X, seen from this rack over its travel
-    # X_CLOSED..X_OPEN. The slot ends are also the END STOPS (24 and 40 mm opening).
+    # X_CLOSED..X_OPEN. The slot ends are also the END STOPS (2 and 40 mm opening).
     s_lo, s_hi = -SCREW_X + (x_e - X_OPEN), -SCREW_X + (x_e - X_CLOSED)
     j.cut(lambda s: s.rect(s_lo, Y_SCREW - 1.2, s_hi, Y_SCREW + 1.2))
     j.cut(lambda s: (s.circle(s_lo, Y_SCREW, 2.4), s.circle(s_hi, Y_SCREW, 2.4)))
@@ -424,37 +414,61 @@ def build_rack(sw, top):
 
 
 def build_finger(sw, top, right, thumb: bool):
-    """Curled mitten finger (rack A side) or thumb (rack B side), modelled upright (zero tilt)
-    on the +Y side at x_e = X_E0. A tab beside the rack's block carries the pivot P and the
-    follower F; the curled strip rises from the tab above the block, clear of it at any tilt."""
+    """Flat straight fingers (rack A) or thumb (rack B), modelled for rack A at x_e = X_E0 (the
+    thumb part is then turned 180 deg like its rack). Grip face at x = x_e - 3, grooved; a solid
+    band up to BAND_Z joins the fingers and reaches the stem; a foot on the stem, a tongue into it."""
+    x_e = X_E0
     j = Part(sw, "Gripper Thumb" if thumb else "Gripper Fingers")
-    segs = THUMB_SEGS if thumb else FINGER_SEGS
-    y_lo = -6.0 if thumb else -12.0
-    j.boss(lambda s: s.rect(XP0 - 3, TAB_Y[0], XP0 + 3, TAB_Y[1]), Z_FOL - 3.0,
-           (PLATE_Z0 + 3.0) - (Z_FOL - 3.0))
-    outline, cl = finger_strip(segs)
-    j.side_boss(top, outline, y_lo, TAB_Y[1])
-    # Pivot (clearance: the finger turns on the screw) and follower (pilot: screw fixed in tab).
-    j.side_cut(top, [("circle", XP0, Z_PIV, M2_CLEAR), ("circle", XP0, Z_FOL, M2_PILOT)])
-    # Silhouette along X (Right Plane: model y, z). The band near the base joins the strip
-    # to the tab; above it only the hand part (y -12..12 / thumb -6..6) carries on.
-    band = PLATE_Z0 + 5.5
-    knuckle = cl[2][1]                          # top of the palm segment
-    if thumb:
-        j.side_cut(right, [("rect", 6.0, band, TAB_Y[1] + 1, 80)])
-    else:
-        # Four fingers: three 1.2 mm gaps from the big knuckle up (the palm stays one piece).
-        j.side_cut(right, [("rect", gy - 0.6, knuckle, gy + 0.6, 80) for gy in (-6.0, 0.0, 6.0)]
-                   + [("rect", 12.0, band, TAB_Y[1] + 1, 80)])
+    fingers = [THUMB] if thumb else FINGERS
+    y_lo = THUMB[0] if thumb else -JAW_Y
+    j.boss(lambda s: s.rect(x_e - JAW_T, y_lo, x_e, JAW_Y), JAW_Z[0], BAND_Z - JAW_Z[0])
+    top_z = max(f[2] for f in fingers)
+    j.boss(lambda s: [s.rect(x_e - JAW_T, y0, x_e, y1) for y0, y1, _ in fingers], BAND_Z - 0.5,
+           top_z - BAND_Z + 0.5)
+    j.boss(lambda s: s.rect(x_e, STEM_Y[0], x_e + STEM_X[1], STEM_Y[1]), JAW_Z[0], FOOT_T)
+    j.boss(lambda s: s.rect(x_e - JAW_T, STEM_Y[0] + 0.3, x_e, STEM_Y[1] - 0.3), TONGUE_Z,
+           JAW_Z[0] - TONGUE_Z)
+    j.cut(lambda s: [s.circle(x_e + dx, JAW_SCREW_Y, M2_CLEAR) for dx in JAW_SCREWS])
+    # Grip grooves across the face (Top Plane = model x, z; through all along y)
+    face = x_e - JAW_T
+    n = int((top_z - JAW_Z[0] - 7.0) / GROOVE_PITCH)
+    zs = [JAW_Z[0] + 4.0 + k * GROOVE_PITCH for k in range(n)]
+    j.side_cut(top, [("rect", face - 1.0, z, face + GROOVE_D, z + GROOVE_W) for z in zs])
+    # Fingertips: each finger cut to its length, both tip corners chamfered (Right Plane = y, z)
+    c, cuts = TIP_CHAMFER, []
+    lengths = [("rect", y0 - 0.7, zt, y1 + 0.7, top_z + 5) for y0, y1, zt in fingers if zt < top_z]
+    if lengths:                          # separate sketch: overlapping outlines fail the cut
+        j.side_cut(right, lengths)
+    for y0, y1, zt in fingers:
+        cuts.append(("poly", [(y0 - 0.7, zt - c - 0.7), (y0 - 0.7, zt + 1), (y0 + c + 1, zt + 1)]))
+        cuts.append(("poly", [(y1 + 0.7, zt - c - 0.7), (y1 - c - 1, zt + 1), (y1 + 0.7, zt + 1)]))
+    if thumb:                            # soften the band's outer top corner beside the thumb
+        cuts.append(("poly", [(JAW_Y + 1, BAND_Z - 5), (JAW_Y + 1, BAND_Z + 1), (JAW_Y - 5, BAND_Z + 1)]))
+    j.side_cut(right, cuts)
     return j.finish()
 
 
-def build_body(sw, top):
+def build_cover(sw):
+    """Gripper Cover: a rounded box over the deck, pinion and racks; only the two finger stems
+    come up through the lid. Drops on from above (before the finger plates) and screws to the
+    body's two posts with 2x M2."""
+    c = Part(sw, "Gripper Cover")
+    hx, hy, r = COVER_OUT
+    t = COVER_WALL
+    z0, z1 = -DECK_T, COVER_LID_Z + COVER_LID_T
+    c.boss(lambda s: s.poly(rrect_pts(hx, hy, r)), z0, z1 - z0)
+    c.cut(lambda s: s.poly(rrect_pts(hx - t, hy - t, r - t)), z0 - 0.5, COVER_LID_Z - z0 + 0.5)
+    c.cut(lambda s: [s.rect(*sl) for sl in lid_slots()])
+    c.cut(lambda s: [s.circle(x, y, M2_CLEAR) for x, y in COVER_POSTS])
+    return c.finish()
+
+
+def build_body(sw, cover_posts=True):
     b = Part(sw, "Gripper Body")
     sx0, sx1 = -SHAFT_FROM_END, SERVO_L - SHAFT_FROM_END
     sc = (sx0 + sx1) / 2
     # Deck the servo tabs sit on, two thin rails the racks slide on (each with a round boss
-    # for its hold-down screw), and two posts for the wrist bracket (PLACEHOLDER).
+    # for its hold-down screw), and two posts for the wrist bracket.
     b.boss(lambda s: s.rect(DECK_X[0], -Y_BACK, DECK_X[1], Y_BACK), -DECK_T, DECK_T)
     b.boss(lambda s: s.rect(-35, Y_SCREW - RAIL_W / 2, 25, Y_SCREW + RAIL_W / 2), 0.0, Z_R0)
     b.boss(lambda s: s.rect(-25, -Y_SCREW - RAIL_W / 2, 35, -Y_SCREW + RAIL_W / 2), 0.0, Z_R0)
@@ -462,6 +476,9 @@ def build_body(sw, top):
            0.0, Z_R0)
     # Ø10 posts: the 5.6 hex nut is 6.5 across corners, so Ø7.5 left only 0.5 mm of wall.
     b.boss(lambda s: (s.circle(-31, 6, 10.0), s.circle(-31, -6, 10.0)), -19.0, 19.0 - DECK_T)
+    if cover_posts:                      # the cover's lid screws down onto these
+        b.boss(lambda s: [s.circle(x, y, 6.0) for x, y in COVER_POSTS], 0.0, COVER_LID_Z)
+        b.cut(lambda s: [s.circle(x, y, M2_PILOT) for x, y in COVER_POSTS], COVER_LID_Z - 8.0, 8.1)
     # Servo opening and tab screw pilots.
     b.cut(lambda s: s.rect(sx0, -SERVO_W / 2, sx1, SERVO_W / 2))
     b.cut(lambda s: (s.circle(sc - TAB_PITCH / 2, 0, M2_PILOT),
@@ -469,39 +486,34 @@ def build_body(sw, top):
     # Rack hold-down screw pilots (M2 self-tapping, from the top of each rail).
     b.cut(lambda s: (s.circle(-SCREW_X, Y_SCREW, M2_PILOT),
                      s.circle(SCREW_X, -Y_SCREW, M2_PILOT)))
-    # Follower plates (one per side) with the vertical slot the finger's follower pin rides in.
-    for sgn in (1, -1):
-        b.boss(lambda s, k=sgn: s.rect(k * (CAM_X - 5), k * Y_BACK, k * (CAM_X + 5), k * CAM_Y[1]),
-               -DECK_T, DECK_T)
-        b.boss(lambda s, k=sgn: s.rect(k * (CAM_X - 5), k * CAM_Y[0], k * (CAM_X + 5), k * CAM_Y[1]),
-               0.0, Z_FOL + 4.0)
-    # Wrist mount PLACEHOLDER: 2x M3 up through the block, captive nuts in the deck top.
+    # Wrist mount: 2x M3 up through the posts, captive nuts in the deck top.
     b.cut(lambda s: (s.circle(-31, 6, M3_CLEAR), s.circle(-31, -6, M3_CLEAR)))
     b.cut(lambda s: (s.hexagon(-31, 6, M3_NUT_AF), s.hexagon(-31, -6, M3_NUT_AF)),
           -M3_NUT_DEPTH, M3_NUT_DEPTH)
-    # Follower slots: 2.4 wide, vertical, covering the follower's small rise (10.2-10.9).
-    # Cut mid-plane in each follower plate only (a through-cut would notch the rails), and
-    # checked by volume, since this is the one cut that depends on the plane's normal sign.
-    before = b.volume()
-    slot = (Z_FOL - 1.2 - 0.5, Z_FOL + 0.7 + 1.2)
-    for sgn in (1, -1):
-        b.side_cut(top, [("rect", sgn * CAM_X - 1.2, slot[0], sgn * CAM_X + 1.2, slot[1])],
-                   mid=sgn * (CAM_Y[0] + CAM_Y[1]) / 2, depth=4.0)
-    removed = before - b.volume()
-    expect = 2 * 2.4 * (slot[1] - slot[0]) * 3.0
-    if abs(removed - expect) > 0.5:
-        raise RuntimeError(f"follower slots removed {removed:.1f} mm3, expected {expect:.1f}")
     return b.finish()
 
 
-def build_assembly(sw, parts):
-    """Body, pinion, 2 racks, fingers (rack A side) and thumb (rack B side), driven through
-    the whole opening range; interference-checked at each step; saved fully open (at rest)."""
-    for path in parts.values():
-        if not sw.GetOpenDocumentByName(str(path)):
-            sw.OpenDoc(str(path), 1)
+OPENINGS = (X_CLOSED, 6.0, 9.0, 13.0, 18.0, X_OPEN)        # rack positions the check visits
+
+
+def jaw_poses(x_e):
+    """(rx, ry, rz, t) for pinion, rack/jaw A and rack/jaw B at rack position x_e."""
+    d = x_e - X_E0                       # rack A displacement from the modelled position
+    th = -d / R                          # pinion turns with the racks (rolling, no slip)
+    c, sn = math.cos(th), math.sin(th)
+    return {"pinion": ((c, sn, 0), (-sn, c, 0), (0, 0, 1), (0, 0, 0)),
+            "A": ((1, 0, 0), (0, 1, 0), (0, 0, 1), (d, 0, 0)),
+            "B": ((-1, 0, 0), (0, -1, 0), (0, 0, 1), (-d, 0, 0))}
+
+
+def build_assembly(sw, parts, path=None, extras=()):
+    """Body, pinion, 2 racks, fingers + thumb (+ `extras`: fixed parts, e.g. covers), driven
+    through the whole opening range; interference-checked at each step; saved fully open."""
+    for p_ in parts.values():
+        if not sw.GetOpenDocumentByName(str(p_)):
+            sw.OpenDoc(str(p_), 1)
     doc = sw.NewDocument(sw.GetUserPreferenceStringValue(9), 0, 0, 0)
-    order = ["body", "pinion", "rack", "rack", "fingers", "thumb"]
+    order = ["body", "pinion", "rack", "rack", "fingers", "thumb", *extras]
     comps = [doc.AddComponent5(str(parts[k]), 0, "", False, "", 0, 0, 0) for k in order]
     if any(c is None for c in comps):
         raise RuntimeError("a component failed to insert")
@@ -519,54 +531,65 @@ def build_assembly(sw, parts):
                                                        [float(v) for v in a]))
 
     def set_opening(x_e):
-        d = x_e - X_E0                       # rack A displacement from the modelled position
-        th = -d / R                          # pinion turns with the racks (rolling, no slip)
-        c, sn = math.cos(th), math.sin(th)
-        b = math.radians(tilt_deg(x_e))
-        cb, sb = math.cos(b), math.sin(b)
-        # Finger: rotate about +Y through its pivot, which has moved by d.
-        rp = (XP0 * cb + Z_PIV * sb, 0.0, -XP0 * sb + Z_PIV * cb)
-        t = (XP0 + d - rp[0], 0.0, Z_PIV - rp[2])
-        put(comps[0], (1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0))
-        put(comps[1], (c, sn, 0), (-sn, c, 0), (0, 0, 1), (0, 0, 0))
-        put(comps[2], (1, 0, 0), (0, 1, 0), (0, 0, 1), (d, 0, 0))
-        put(comps[3], (-1, 0, 0), (0, -1, 0), (0, 0, 1), (-d, 0, 0))
-        put(comps[4], (cb, 0, -sb), (0, 1, 0), (sb, 0, cb), t)
-        put(comps[5], (-cb, 0, -sb), (0, -1, 0), (-sb, 0, cb), (-t[0], 0.0, t[2]))
+        jp = jaw_poses(x_e)
+        put(comps[1], *jp["pinion"])
+        for k in (2, 4):                     # rack A + fingers, rack B + thumb (turned 180 deg)
+            put(comps[k], *jp["A"])
+            put(comps[k + 1], *jp["B"])
+        for k in [0] + list(range(6, len(comps))):
+            put(comps[k], (1, 0, 0), (0, 1, 0), (0, 0, 1), (0, 0, 0))
         doc.ForceRebuild3(False)
 
     results = []
-    for x_e in (X_CLOSED, 17.0, 18.0, 20.0, 22.0, X_OPEN):
+    for x_e in OPENINGS:
         set_opening(x_e)
-        n = check_interference(sw_tlb, doc, quiet=True)
-        results.append((opening_mm(x_e), tilt_deg(x_e), n))
-    set_opening(X_OPEN)                       # save it at rest: fully open, fingers flared
+        results.append((opening_mm(x_e), check_interference(sw_tlb, doc, quiet=True)))
+    set_opening(X_OPEN)                       # save it at rest: fully open
     doc.ShowNamedView2("*Isometric", 7)
     doc.ViewZoomtofit2()
-    path = GRIPPER_DIR / "Gripper.SLDASM"
+    path = path or GRIPPER_DIR / "Gripper.SLDASM"
     doc.SaveAs(str(path))
     return path, results
 
 
 def check_interference(sw_tlb, doc, quiet=False):
-    """Count overlapping parts (touching faces are allowed); print each overlap."""
+    """Overlapping parts (touching faces are allowed), as [(names, mm3)]."""
     idm = sw_tlb.IAssemblyDoc(doc._oleobj_).InterferenceDetectionManager
     idm.TreatCoincidenceAsInterference = False
-    found = idm.GetInterferences() or []
-    for r in found:
+    found = []
+    for r in idm.GetInterferences() or []:
         r = sw_tlb.IInterference(r._oleobj_)
-        names = [sw_tlb.IComponent2(c._oleobj_).Name2 for c in r.Components]
-        print(f"  INTERFERENCE {names}: {r.Volume * 1e9:.2f} mm3")
+        found.append((sorted(sw_tlb.IComponent2(c._oleobj_).Name2 for c in r.Components),
+                      round(r.Volume * 1e9, 2)))
     idm.Done()
-    print(f"interference check: {len(found)} overlap(s)")
-    return len(found)
+    if not quiet:
+        print(f"interference check: {len(found)} overlap(s) {found}")
+    return found
+
+
+def build_all(sw, cover=True):
+    """Every gripper part, saved into GRIPPER_DIR (a caller may point that elsewhere). cover=False
+    leaves out the Gripper Cover (Arm Human has its own); the body's posts are always there."""
+    top, right = probe_plane(sw, "Top Plane"), probe_plane(sw, "Right Plane")
+    built = {}
+    steps = [("pinion", lambda: build_pinion(sw)), ("rack", lambda: build_rack(sw)),
+             ("fingers", lambda: build_finger(sw, top, right, thumb=False)),
+             ("thumb", lambda: build_finger(sw, top, right, thumb=True)),
+             ("body", lambda: build_body(sw))]
+    if cover:
+        steps.append(("cover", lambda: build_cover(sw)))
+    for key, fn in steps:
+        path, vol = fn()
+        built[key] = path
+        print(f"{path.stem:16s} {vol * 1.24:5.1f} g solid PLA")
+    return built
 
 
 def main():
     sw = w.Dispatch("SldWorks.Application")
     sw.Visible = True
     names = ("Gripper Body", "Gripper Pinion", "Gripper Rack", "Gripper Fingers",
-             "Gripper Thumb", "Gripper Jaw")
+             "Gripper Thumb", "Gripper Jaw", "Gripper Cover")
     ours = {str(f / f"{n}.SLDPRT").lower() for n in names for f in (OUT, GRIPPER_DIR)}
     ours |= {str(f / "Gripper.SLDASM").lower() for f in (OUT, GRIPPER_DIR)}
     d, titles = sw.GetFirstDocument, []
@@ -576,18 +599,10 @@ def main():
         d = d.GetNext
     for t in titles:
         sw.CloseDoc(t)
-    top, right = probe_plane(sw, "Top Plane"), probe_plane(sw, "Right Plane")
-    built = {}
-    for key, fn in (("pinion", lambda: build_pinion(sw)), ("rack", lambda: build_rack(sw, top)),
-                    ("fingers", lambda: build_finger(sw, top, right, thumb=False)),
-                    ("thumb", lambda: build_finger(sw, top, right, thumb=True)),
-                    ("body", lambda: build_body(sw, top))):
-        path, vol = fn()
-        built[key] = path
-        print(f"{path.stem:16s} {vol * 1.24:5.1f} g solid PLA")
-    asm, results = build_assembly(sw, built)
-    for opening, tilt, n in results:
-        print(f"opening {opening:4.1f} mm  finger tilt {tilt:+5.1f} deg  interferences: {n}")
+    built = build_all(sw)
+    asm, results = build_assembly(sw, built, extras=("cover",))
+    for opening, found in results:
+        print(f"opening {opening:4.1f} mm  interferences: {len(found)} {found}")
     print("assembly:", asm)
 
 

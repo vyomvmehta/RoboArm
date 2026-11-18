@@ -361,8 +361,10 @@ def poses_from_ik():
     from arm.kinematics import ik
     cfg = load_arm()
     out = {}
-    for label, (r, z, pitch) in {"home": (150, 80, -90), "far": (230, 15, -90),
-                                 "near": (105, 15, -90), "high": (150, 200, 0)}.items():
+    ws = cfg.workspace                            # far / near = the edges of the pick ring, picking low
+    for label, (r, z, pitch) in {"home": (150, 80, -90), "far": (ws["r_max"], ws["z_min"], -90),
+                                 "near": (ws["r_min"], ws["z_min"], -90),
+                                 "high": (150, cfg.geometry.shoulder_height + 110, 0)}.items():
         a = ik(cfg.geometry, r, 0, z, math.radians(pitch), limits=cfg.limits)
         t1, t2, t3 = (math.degrees(v) for v in (a.theta1, a.theta2, a.theta3))
         out[label] = (t1, t1 + t2, t3)            # forearm absolute = theta1 + theta2

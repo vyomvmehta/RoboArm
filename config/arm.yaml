@@ -11,8 +11,8 @@
 links:  # D14 (Nov 9): four-bar, 13 / 12 / 7 cm; may grow to 15 / 14 after the MG996R stall test (~Nov 17)
   l1: 130               # shoulder axis -> elbow axis
   l2: 120               # elbow axis -> wrist axis
-  l3: 88                # wrist axis -> grasp point: bracket 20 + gripper 19 + 49 to the curled fingertips (D17, Nov 12)
-  shoulder_height: 90   # ESTIMATE until Siddharth's base exists: base height + turntable + 50 (shoulder bracket: axis 50.0 above its underside, Nov 10)
+  l3: 84                # wrist axis -> grasp point: bracket 20 + gripper 19 + 45 to the middle of the flat jaw pads (D21, Nov 15)
+  shoulder_height: 174.5  # Siddharth's base (Nov 16 review): plate 6 + wheel gap 4.5 + box 70 (measured in Enclosure.SLDPRT) + tray 40 + lid 4, + 50 to the bracket's axis. Re-measure on the printed base
   shoulder_offset: 0    # shoulder bracket is centred on the turntable axis (Nov 10)
 
 # Each servo turns 180 degrees. `window` is where that 180 degrees lands in joint angles; it is
@@ -27,14 +27,14 @@ joints:
     limits: [-20, 140]
   j2_elbow:
     window: [-160, 20]    # elbow-up poses only use the negative side
-    limits: [-140, 0]     # -145 let the gripper graze the shoulder bracket (CAD check, Nov 11); closest pick needs ~-133
+    limits: [-135, 0]     # -140 lets the gripper cover hit the shoulder bracket (CAD check, Nov 16, D21); closest pick needs ~-133
   j3_wrist:
     window: [-120, 60]    # picking straight down needs about -85..+10 (workspace check, 2026-11-04)
-    limits: [-95, 50]     # -110 folds the wrist bracket + gripper into the forearm; clear at -100 (D19 sweep)
+    limits: [-90, 50]     # Arm Human (adopted Nov 17, D21): -90, its skins + cuff are checked to -90 (plain arm: -95, D19)
 
 gripper:  # J4. Opening in mm is mapped to pulses in calibration.yaml once the gripper exists
-  open_mm: 40            # fully open = fingers flared 15 deg outward (rest)
-  closed_mm: 26          # curled fingertips (D17, Nov 12): below 26 the tips pass < 6 mm apart; racks stop here
+  open_mm: 40            # fully open (rest); flat parallel jaws (D21, Nov 15)
+  closed_mm: 2           # flat jaws (D21): the rack slot stops them 2 mm apart
 
 speed_limits_deg_per_s:  # start low (CLAUDE.md section 12); widen once the arm is proven
   j0_base: 45
@@ -49,12 +49,13 @@ poses:
   home: {x: 150, y: 0, z: 80, pitch: -90}
   # Resting pose for arming/disarming: upper arm upright and forearm folded down, so gravity
   # barely loads the shoulder. Given as joint angles because it must not depend on IK.
-  park: {theta0: 0, theta1: 90, theta2: -130, theta3: -40}
+  # theta3 -20, not -40: at -40 the hand dips ~5 mm into the base's 170 mm lid (Nov 16); -20 clears it by ~35.
+  park: {theta0: 0, theta1: 90, theta2: -130, theta3: -20}
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
-  r_min: 100            # closer: the elbow folds past its -145 limit (IK reaches ~95 at z = 15)
-  r_max: 240            # IK reaches ~260 at z = 15 (13/12/7), but near-straight = sloppy + four-bar dead point
-  z_min: 5              # never drive the jaws into the table
+  r_min: 140            # closer: the hand hits the base's 170 mm box (front face 85 out) or its 200 mm plate (Nov 16)
+  r_max: 230            # on the 174.5 base, 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34
+  z_min: 25             # grasp point = middle of the finger pads; the longest fingertip is 20 below it (D21), so 25 keeps it 5 above the table
   z_max: 250
 
 # Assembly note for the CAD and the build: the window centre is where the servo sits at 1500 us.
