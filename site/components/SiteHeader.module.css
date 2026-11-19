@@ -1,0 +1,66 @@
+/* The header sits on the mat on every page, so the green is the first thing you see. */
+.header { background: var(--mat); color: var(--chalk); }
+
+.bar {
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  min-height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--chalk);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.nav ul { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: var(--space-5); }
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--chalk);
+  font-weight: 600;
+  text-decoration: none;
+}
+.nav a:hover { text-decoration: underline; text-decoration-thickness: 0.12em; text-underline-offset: 0.3em; }
+.nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 0.2em; text-underline-offset: 0.35em; }
+
+/* A page that does not exist yet is plain text, said plainly. */
+.soon { color: color-mix(in srgb, var(--chalk) 62%, var(--mat)); }
+.soon span { display: none; }
+
+.toggle {
+  display: none;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  margin-right: calc(-1 * var(--space-4));
+  background: none;
+  border: 0;
+  color: var(--chalk);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 58rem) {
+  .toggle { display: inline-flex; align-items: center; }
+  .nav { flex-basis: 100%; display: none; padding-bottom: var(--space-5); }
+  .nav[data-open="true"] { display: block; }
+  .nav ul { flex-direction: column; align-items: stretch; gap: 0; }
+  .nav li { font-size: var(--text-lg); }
+  .nav a, .soon { min-height: 48px; display: flex; align-items: center; }
+  .soon span { display: inline; margin-left: 0.4em; font-size: var(--text-sm); }
+}
