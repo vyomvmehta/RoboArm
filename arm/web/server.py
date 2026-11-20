@@ -38,6 +38,7 @@ def create_app(link: Link) -> FastAPI:
     app = FastAPI()
     app.state.controller = controller
     owner = {"socket": None}              # only ONE browser may drive the arm at a time
+    disarming: set[asyncio.Task] = set()  # running disarm() calls (kept so they aren't GC'd)
 
     @app.get("/")
     def index():
@@ -84,7 +85,11 @@ def create_app(link: Link) -> FastAPI:
                     else:                 # sliders jump back to park: that's what is being sent
                         await send({"type": "pose", "values": controller.target_values})
                 elif kind == "disarm":
-                    await controller.disarm()
+                    # Run it in the background: parking takes seconds, and this loop must
+                    # keep reading so a second press ("Stop now", now=true) gets through.
+                    t = asyncio.create_task(controller.disarm(park_first=not msg.get("now")))
+                    disarming.add(t)
+                    t.add_done_callback(disarming.discard)
                 elif kind == "joints":
                     why = controller.set_target(msg["deg"])
                     if why:
