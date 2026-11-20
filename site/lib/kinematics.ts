@@ -5,10 +5,22 @@
 //   arm/comms/protocol.py         encode          (XOR checksum, as two hex digits)
 //   arm/motion.py + control.py    step_toward     (all joints arrive together) + four-bar cap
 // Side view only: the base angle is 0 and the gripper points straight down (pitch -90).
-
-import { geometry as g, heartbeatHz, limits, servo, speed, workspace } from "../content/arm.ts";
+// Every number comes in through `cfg`, read from config/*.yaml at build time (lib/armConfig.ts).
+// tests/parity.test.mjs checks this file against the Python on the same targets.
 
 const RAD = Math.PI / 180;
+
+export type ServoJoint = { centreDeg: number; direction: number; centreUs: number; usPerDeg: number; minUs: number; maxUs: number };
+
+export type ArmConfig = {
+  geometry: { l1: number; l2: number; l3: number; shoulderHeight: number; shoulderOffset: number; fourBarCrank: number };
+  limits: { theta1: [number, number]; theta2: [number, number]; theta3: [number, number] };
+  workspace: { rMin: number; rMax: number; zMin: number; zMax: number };
+  speed: { theta1: number; theta2: number; theta3: number };
+  heartbeatHz: number;
+  servo: { base: ServoJoint; shoulder: ServoJoint; elbow: ServoJoint; fourBarElbow: boolean; wrist: ServoJoint; gripperOpenUs: number };
+  home: { r: number; z: number };
+};
 
 export type Angles = { theta1: number; theta2: number; theta3: number }; // degrees
 export type Solve = { ok: true; angles: Angles } | { ok: false; why: string };
@@ -16,12 +28,13 @@ export type Solve = { ok: true; angles: Angles } | { ok: false; why: string };
 const f1 = (v: number) => v.toFixed(1);
 
 /** Target (mm out from the base axis, mm above the table) -> joint angles, or the reason it is refused. */
-export function solve(r: number, z: number): Solve {
-  if (!(workspace.rMin <= r && r <= workspace.rMax)) {
-    return { ok: false, why: `${r.toFixed(0)} mm from the base axis is outside the workspace (${workspace.rMin}-${workspace.rMax} mm)` };
+export function solve(cfg: ArmConfig, r: number, z: number): Solve {
+  const { geometry: g, workspace: ws, limits } = cfg;
+  if (!(ws.rMin <= r && r <= ws.rMax)) {
+    return { ok: false, why: `${r.toFixed(0)} mm from the base axis is outside the workspace (${ws.rMin}-${ws.rMax} mm)` };
   }
-  if (!(workspace.zMin <= z && z <= workspace.zMax)) {
-    return { ok: false, why: `z = ${z.toFixed(0)} mm is outside the workspace (${workspace.zMin}-${workspace.zMax} mm)` };
+  if (!(ws.zMin <= z && z <= ws.zMax)) {
+    return { ok: false, why: `z = ${z.toFixed(0)} mm is outside the workspace (${ws.zMin}-${ws.zMax} mm)` };
   }
   const phi = -90 * RAD;
   // Step back from the grasp point along the gripper to find the wrist axis.
@@ -56,7 +69,8 @@ export function solve(r: number, z: number): Solve {
 }
 
 /** Joint positions in the side view, mm, table at z = 0. */
-export function fk(a: Angles) {
+export function fk(cfg: ArmConfig, a: Angles) {
+  const g = cfg.geometry;
   const a1 = a.theta1 * RAD;
   const a12 = (a.theta1 + a.theta2) * RAD;
   const phi = (a.theta1 + a.theta2 + a.theta3) * RAD;
@@ -70,22 +84,27 @@ export function fk(a: Angles) {
   return { S, E, W, T, C, L, phi };
 }
 
-function pulse(deg: number, j: { centreDeg: number; direction: number }): number {
-  return Math.round(j.direction * servo.usPerDeg * (deg - j.centreDeg) + servo.centreUs);
+function pulse(deg: number, j: ServoJoint): number {
+  return Math.round(j.direction * j.usPerDeg * (deg - j.centreDeg) + j.centreUs);
 }
 
 /** The five pulses, in microseconds, that hold this pose: base, shoulder, elbow, wrist, gripper. */
-export function pulses(a: Angles): number[] {
+export function pulses(cfg: ArmConfig, a: Angles): number[] {
+  const s = cfg.servo;
   return [
-    pulse(0, servo.base),
-    pulse(a.theta1, servo.shoulder),
-    pulse(a.theta1 + a.theta2, servo.elbow), // four-bar: the forearm's angle to the horizontal
-    pulse(a.theta3, servo.wrist),
-    servo.gripperOpenUs,
+    pulse(0, s.base),
+    pulse(a.theta1, s.shoulder),
+    // Four-bar: the elbow servo holds the forearm's angle to the horizontal, theta1 + theta2.
+    pulse(s.fourBarElbow ? a.theta1 + a.theta2 : a.theta2, s.elbow),
+    pulse(a.theta3, s.wrist),
+    s.gripperOpenUs,
   ];
 }
 
-export const pulsesInRange = (p: number[]) => p.every((us) => servo.minUs <= us && us <= servo.maxUs);
+export function pulsesInRange(cfg: ArmConfig, p: number[]): boolean {
+  const s = cfg.servo;
+  return [s.base, s.shoulder, s.elbow, s.wrist].every((j, i) => j.minUs <= p[i] && p[i] <= j.maxUs);
+}
 
 export function checksum(body: string): string {
   let cs = 0;
@@ -100,8 +119,9 @@ export function frame(seq: number, p: number[]): string {
 }
 
 /** One tick of the laptop's ramp: every joint covers the same fraction of its trip, so they arrive together. */
-export function stepToward(cur: Angles, goal: Angles): Angles {
-  const dt = 1 / heartbeatHz;
+export function stepToward(cfg: ArmConfig, cur: Angles, goal: Angles): Angles {
+  const dt = 1 / cfg.heartbeatHz;
+  const speed = cfg.speed;
   const names = ["theta1", "theta2", "theta3"] as const;
   const ticks = Math.max(...names.map((n) => Math.abs(goal[n] - cur[n]) / (speed[n] * dt)));
   if (ticks <= 1) return { ...goal };
@@ -109,11 +129,14 @@ export function stepToward(cur: Angles, goal: Angles): Angles {
   for (const n of names) next[n] = cur[n] + (goal[n] - cur[n]) / ticks;
 
   // Four-bar: the elbow servo turns by d(theta1) + d(theta2). Keep that inside its own speed.
-  const servoMove = Math.abs(next.theta1 - cur.theta1 + (next.theta2 - cur.theta2));
+  // A speed of 0 or less means "frozen" (same rule as the Python): leave the step alone.
   const cap = speed.theta2 * dt;
-  if (servoMove > cap + 1e-9) {
-    const f = cap / servoMove;
-    for (const n of names) next[n] = cur[n] + (next[n] - cur[n]) * f;
+  if (cfg.servo.fourBarElbow && cap > 0) {
+    const servoMove = Math.abs(next.theta1 - cur.theta1 + (next.theta2 - cur.theta2));
+    if (servoMove > cap + 1e-9) {
+      const f = cap / servoMove;
+      for (const n of names) next[n] = cur[n] + (next[n] - cur[n]) * f;
+    }
   }
   return next;
 }

@@ -11,7 +11,7 @@ export const intro = [
 
 export const facts = [
   { name: "Motors", value: "Five hobby servos: three MG996R for the base, shoulder and elbow, two MG90S for the wrist and gripper." },
-  { name: "Links", value: "Upper arm 130 mm, forearm 120 mm, 3D printed in PLA." },
+  { name: "Links", value: "" }, // filled from config/arm.yaml by app/page.tsx
   { name: "Elbow", value: "Driven through a four-bar linkage, so its motor sits down at the shoulder instead of riding on the arm." },
   { name: "Control", value: "Python on a laptop, an Arduino Nano and a PCA9685 servo driver." },
   { name: "Messages", value: "30 a second over USB, each with a checksum. About 12 ms there and back, measured on the bench." },

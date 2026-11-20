@@ -15,6 +15,9 @@ links:  # D14 ON HOLD (Nov 5): 11 / 10 / 7 cm until the servo torque test; may g
   shoulder_height: 90   # shoulder axis above the table. Estimate: base enclosure + turntable + shoulder bracket
   shoulder_offset: 15   # shoulder axis forward of the base axis. Estimate
 
+four_bar:  # D19: parallelogram elbow drive. Crank on the elbow servo = lever behind the elbow
+  crank_mm: 30          # (30, not 25: at 25 the pin hole sat 1.5 mm from the horn screw). Used by the site's drawing.
+
 # Each servo turns 180 degrees. `window` is where that 180 degrees lands in joint angles; it is
 # fixed when the horn is put on (see the note at the bottom). `limits` is the part of the window
 # the software allows: it stays clear of the ends and of the arm hitting itself or the table.

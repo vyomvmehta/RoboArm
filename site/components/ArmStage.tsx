@@ -5,9 +5,7 @@
 // the yellow marker, which can be dragged. Below it: what the laptop would compute and send.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { geometry as g, heartbeatHz, home, workspace } from "@/content/arm";
-import { type Angles, fk, frame, pulses, pulsesInRange, solve, stepToward } from "@/lib/kinematics";
-import { servo } from "@/content/arm";
+import { type Angles, type ArmConfig, fk, frame, pulses, pulsesInRange, solve, stepToward } from "@/lib/kinematics";
 import styles from "./ArmStage.module.css";
 
 // Stage window in arm coordinates (mm): x out from the base axis, z up from the table.
@@ -25,8 +23,8 @@ const fit = (text: string) => ({ width: `${Math.max(2, text.length) * 0.5 + 0.12
 const deg = (v: number) =>`${v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}°`;
 const same = (a: Angles, b: Angles) => a.theta1 === b.theta1 && a.theta2 === b.theta2 && a.theta3 === b.theta3;
 
-function start() {
-  const s = solve(home.r, home.z);
+function start(arm: ArmConfig) {
+  const s = solve(arm, arm.home.r, arm.home.z);
   if (!s.ok) throw new Error(`home pose is not reachable: ${s.why}`);
   return s.angles;
 }
@@ -40,29 +38,32 @@ function Capsule({ a, b, w }: { a: { x: number; z: number }; b: { x: number; z: 
   );
 }
 
-export function ArmStage() {
-  const [r, setR] = useState<number>(home.r);
-  const [z, setZ] = useState<number>(home.z);
-  const [rText, setRText] = useState(String(home.r));
-  const [zText, setZText] = useState(String(home.z));
-  const [goal, setGoal] = useState<Angles>(start);
-  const [cur, setCur] = useState<Angles>(start);
+// `arm` is read from config/*.yaml at build time by the page (lib/armConfig.ts).
+export function ArmStage({ arm }: { arm: ArmConfig }) {
+  const g = arm.geometry, workspace = arm.workspace, heartbeatHz = arm.heartbeatHz;
+  const [r, setR] = useState<number>(Math.round(arm.home.r));
+  const [z, setZ] = useState<number>(Math.round(arm.home.z));
+  const [rText, setRText] = useState(String(Math.round(arm.home.r)));
+  const [zText, setZText] = useState(String(Math.round(arm.home.z)));
+  const [goal, setGoal] = useState<Angles>(() => start(arm));
+  const [cur, setCur] = useState<Angles>(() => start(arm));
   const [seq, setSeq] = useState(1);
   const [why, setWhy] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragging = useRef(false);
+  const dragged = useRef(false); // a drag just ended: ignore the click the browser sends after it
   const ids = useId();
 
   // A new target: solve it. If it is refused, the arm keeps its previous goal, like the real one.
   const aim = useCallback((nr: number, nz: number) => {
     setR(nr);
     setZ(nz);
-    const s = solve(nr, nz);
+    const s = solve(arm, nr, nz);
     if (!s.ok) return setWhy(s.why);
-    if (!pulsesInRange(pulses(s.angles))) return setWhy(`a pulse would be outside ${servo.minUs}-${servo.maxUs} us`);
+    if (!pulsesInRange(arm, pulses(arm, s.angles))) return setWhy("a servo pulse would be outside its calibrated range");
     setWhy(null);
     setGoal(s.angles);
-  }, []);
+  }, [arm]);
 
   // The laptop's heartbeat: 30 times a second, step the pose being sent toward the goal.
   useEffect(() => {
@@ -73,11 +74,11 @@ export function ArmStage() {
       return;
     }
     const t = setTimeout(() => {
-      setCur((c) => stepToward(c, goal));
+      setCur((c) => stepToward(arm, c, goal));
       setSeq((n) => n + 1);
     }, 1000 / heartbeatHz);
     return () => clearTimeout(t);
-  }, [cur, goal]);
+  }, [cur, goal, arm, heartbeatHz]);
 
   const fromPointer = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current;
@@ -98,10 +99,12 @@ export function ArmStage() {
     aim(which === "r" ? v : r, which === "z" ? v : z);
   };
 
-  const pose = fk(cur);
-  const ghost = fk(goal);
+  const pose = fk(arm, cur);
+  const ghost = fk(arm, goal);
   const moving = !same(cur, goal);
-  const p = pulses(cur);
+  const p = pulses(arm, cur);
+  // Base drawn from the config: the shoulder axis sits 50 mm above the lid (shoulder bracket, D18).
+  const lid = Math.max(20, g.shoulderHeight - 50);
   const dir = { x: Math.cos(pose.phi), z: Math.sin(pose.phi) }; // along the hand
   const nrm = { x: -dir.z, z: dir.x }; // across it
   const along = (o: { x: number; z: number }, d: number, side = 0) => ({ x: o.x + dir.x * d + nrm.x * side, z: o.z + dir.z * d + nrm.z * side });
@@ -135,7 +138,10 @@ export function ArmStage() {
             className={styles.svg}
             role="img"
             aria-label="Side view of the arm on a 10 millimetre grid. The yellow marker is the target; type new numbers in the headline or drag the marker."
-            onClick={(e) => !dragging.current && fromPointer(e)}
+            onClick={(e) => {
+              if (dragged.current) return void (dragged.current = false);
+              fromPointer(e);
+            }}
           >
             <defs>
               <pattern id={`${ids}-g10`} width="10" height="10" patternUnits="userSpaceOnUse" x={sx(0)} y={sy(0)}>
@@ -162,7 +168,7 @@ export function ArmStage() {
             </text>
 
             {/* table and its scale */}
-            <line x1="-3000" y1={sy(0)} x2="3000" y2={sy(0)} className={styles.table} />
+            <line x1={0} y1={sy(0)} x2={W} y2={sy(0)} className={styles.table} />
             {[0, 50, 100, 150, 200, 250].map((x) => (
               <text key={x} x={sx(x)} y={sy(0) + 15} textAnchor="middle" className={styles.scale}>
                 {x}
@@ -182,8 +188,8 @@ export function ArmStage() {
               <rect x={sx(-100)} y={sy(6)} width="200" height="6" />
               <rect x={sx(-78)} y={sy(10.5)} width="14" height="4.5" />
               <rect x={sx(64)} y={sy(10.5)} width="14" height="4.5" />
-              <rect x={sx(-85)} y={sy(124.5)} width="170" height="114" />
-              <path d={`M${sx(-22)} ${sy(124.5)} V${sy(g.shoulderHeight)} a22 22 0 0 1 44 0 V${sy(124.5)} Z`} />
+              <rect x={sx(-85)} y={sy(lid)} width="170" height={q(lid - 10.5)} />
+              <path d={`M${sx(g.shoulderOffset - 22)} ${sy(lid)} V${sy(g.shoulderHeight)} a22 22 0 0 1 44 0 V${sy(lid)} Z`} />
             </g>
 
             {/* where it is heading, when that is not where it is */}
@@ -226,10 +232,14 @@ export function ArmStage() {
                 dragging.current = true;
                 e.currentTarget.setPointerCapture(e.pointerId);
               }}
-              onPointerMove={(e) => dragging.current && fromPointer(e)}
+              onPointerMove={(e) => {
+                if (!dragging.current) return;
+                dragged.current = true;
+                fromPointer(e);
+              }}
               onPointerUp={(e) => {
                 e.currentTarget.releasePointerCapture(e.pointerId);
-                setTimeout(() => (dragging.current = false), 0);
+                dragging.current = false;
               }}
               onPointerCancel={() => (dragging.current = false)}
             >

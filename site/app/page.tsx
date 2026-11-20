@@ -1,13 +1,19 @@
 import { ArmStage } from "@/components/ArmStage";
 import { Checklist, Facts, IndexList, Section } from "@/components/ui";
 import { about, building, facts, intro, joints, notYet, works } from "@/content/home";
+import { loadArmConfig } from "@/lib/armConfig";
 import { nav } from "@/lib/site";
 import styles from "./home.module.css";
 
 export default function Home() {
+  const arm = loadArmConfig();
+  const g = arm.geometry;
+  const shown = facts.map((f) =>
+    f.name === "Links" ? { ...f, value: `Upper arm ${g.l1} mm, forearm ${g.l2} mm, 3D printed in PLA.` } : f,
+  );
   return (
     <>
-      <ArmStage />
+      <ArmStage arm={arm} />
 
       <Section>
         <div className={styles.intro}>
@@ -16,7 +22,7 @@ export default function Home() {
               <p key={p.slice(0, 24)}>{p}</p>
             ))}
           </div>
-          <Facts items={facts} />
+          <Facts items={shown} />
         </div>
       </Section>
 
