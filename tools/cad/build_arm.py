@@ -56,7 +56,7 @@ CRANK = 30.0        # crank O->C = lever E->L (parallelogram). 30 so the pin cle
                     # screw at 20 mm (25 left only 1.5 mm of plastic between the holes)
 M3, M3_HEAD_D, M3_HEAD_H = 3.45, 5.8, 2.2   # clearance hole, counterbore for the screw head
 M8 = 8.0            # elbow bolt hole in the forearm boss (prints ~7.8, bolt threads in snug)
-B608_D, B608_H = 22.0, 7.0                  # 608 bearing: seat (D15 press fit) and width
+B608_D, B608_H = 22.2, 7.0                  # 608 bearing: seat and width. 22.2 = UltiMaker fit test Nov 20 (22.0 too tight, 22.4 drops out)
 LIP_D = 16.0        # lip under the bearing: supports the outer race, clears the inner race
 HORN_SCREWS = (8.0, 20.0)                   # aluminium horn holes used (D15: 8 / 20 / 29)
 HORN_CENTRE = 6.5   # access hole for the horn's own centre screw
@@ -73,7 +73,7 @@ SPACER = (11.0, 8.4, 1.5)            # printed ring under the M8 head: OD, ID, h
 PAD_D = 7.0                          # Ø7 x 1 pad at each rod pin: the rod rubs on a small ring, not a face
 
 # Wrist: MG90S in the forearm end, shaft pointing -Z; tabs on the forearm's bottom face.
-MG90S_W, MG90S_L, MG90S_SHAFT = 11.9, 22.8, 5.6
+MG90S_W, MG90S_L, MG90S_SHAFT = 12.0, 22.9, 5.65   # body 11.9 x 22.8 + 0.10 (UltiMaker fit test Nov 20); shaft 5.6 + half the gap
 MG90S_TABS, M2_PILOT = 27.5, 1.8
 WRIST_HORN_TOP = LOW_Z[0] - 14.0     # tab underside -> top of the fitted horn = 14 (measured)
 HORN_PILOT_R = (6.0, 17.0)           # MG90S horn holes (measured)

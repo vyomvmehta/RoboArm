@@ -54,8 +54,9 @@ RACK_W = 7.0                     # rack face width (0.5 proud of the pinion top 
 Z_R0 = Z_P0 - 0.5
 Z_R1 = Z_R0 + RACK_W
 
-# MG90S (D15): pocket 11.9 x 22.8 (+0.00), shaft 5.6 from one end, tab holes 27.5 apart.
-SERVO_W, SERVO_L, SHAFT_FROM_END = 11.9, 22.8, 5.6
+# MG90S: pocket 12.0 x 22.9 = body + 0.10 (UltiMaker fit test Nov 20: "10" snug, "25" pops out),
+# shaft 5.6 from one end + half the gap, tab holes 27.5 apart.
+SERVO_W, SERVO_L, SHAFT_FROM_END = 12.0, 22.9, 5.65
 TAB_PITCH = 27.5
 M2_PILOT = 1.8                   # self-tapping M2 into plastic (D15)
 M3_CLEAR, M3_NUT_AF, M3_NUT_DEPTH = 3.45, 5.6, 4.2   # D15: depth = nut 3.87 + 0.3 (2.6 was the TEST depth; nuts stuck up)

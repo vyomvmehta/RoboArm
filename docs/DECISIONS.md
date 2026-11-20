@@ -218,6 +218,16 @@ Jaws reshaped as a thumb and four joined fingers ("mitten"), fingertips curled s
 ### D15 update (2026-11-10): M3 nut pocket depth = 4.2
 Rule from the test print: nut thickness + 0.3. The nut measured 3.87 (Nov 4), so **draw 4.2 deep**. (2.6 was only the test depth: the nuts stuck up.) Leave ≥ 2.5 mm of plastic behind the nut, because the screw pulls the nut into that floor.
 
+### D15 update (2026-11-20): fits on the UltiMaker S5 (the printer for batch B)
+The Prusas need SD cards we don't have, so batch B prints on the UltiMaker S5 (Cura, Generic PLA, AA 0.4, Fast 0.2 mm, 195 °C). Fit test reprinted there with supports **off** (with supports on, Cura filled the holes and nut pockets with pillars). Press-in results (Vyom + team; caliper had no battery, so fits were judged by feel):
+| Feature | Fits | Drawn in the parts now |
+| --- | --- | --- |
+| MG996R pocket | **+0.25** snug, no wobble | Shoulder Bracket 19.9 × 40.6 → **20.05 × 40.75** (grown about its old centre) |
+| MG90S pocket | **+0.10** snug (+0.25 pops out) | Forearm + Gripper Body 11.9 × 22.8 → **12.0 × 22.9** |
+| 608 seat | **22.2** firm (22.0 too tight to remove, 22.4 drops out) | Upper Arm Ø22.0 → **Ø22.2** |
+| M3 nut pocket | 5.6 prints 5.6 | unchanged (5.6 AF × 4.2) |
+Arm Human rebuilt with these: 0 interferences at the 20 poses, hand clear at 2–40 mm. Print set re-exported to `STL/Arm Human/`; tight-fit plate = `Print Nov 18/UltiMaker plates/Plate 5`. Plain `Arm/` and `Gripper/` STLs in `STL/Arm (plain, not used)/` still have the old sizes. Still to check with hardware: M3 screw through holes 3.0 / 3.2 / 3.4.
+
 ## D18: Shoulder bracket for the four-bar (2026-11-10, Vyom built it in SolidWorks; Siddharth checks)
 
 - **What:** `SolidWorks Parts/Shoulder Bracket.SLDPRT`. 80 × 60 × 5 base plate (mid-plane, so its top is at +2.5) with 4× M3 (Ø3.45) on a **60 × 40** pattern = the interface to Siddharth's turntable/lid. Two 50 × 66 towers, **7 mm** thick, inner faces **39 mm** apart. MG996R pockets 19.9 × 40.6 cut through both towers in one feature; shaft axis **47.5 above the origin = 45 above the plate top = 50 above the plate's underside**; 4× Ø3.45 tab holes per servo on 49 × 10; M3 nut pockets 5.6 AF × 4.2 deep on the outer faces. Mass 71.4 g (PLA, solid).
