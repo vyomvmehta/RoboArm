@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  /* One easing family for the whole site. Entrances and exits use --ease-out,
+     things that move while on screen use --ease-in-out. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+[role="tab"] {
+  touch-action: manipulation;
+}
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* iOS zooms the page into any input under 16px */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+body {
+  @apply bg-ink text-paper font-sans antialiased;
+}
+::selection {
+  background: rgba(255, 106, 26, 0.35);
+}
+:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .label {
+    @apply font-mono text-[11px] uppercase tracking-[0.16em] text-mute;
+  }
+  .hairline {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .panel {
+    @apply bg-panel/80 backdrop-blur-sm;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Press feedback for anything pressable. */
+  .press {
+    transition: transform 160ms var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* Group entrance (Reveal.tsx). One entrance per container; delays are set per child and
+     shrink down the group, a child marked data-lead travels furthest, and children
+     marked data-fade only fade. Transitions, so nothing blocks interaction. */
+  .stagger > * {
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 500ms var(--ease-out),
+      transform 500ms var(--ease-out);
+    transition-delay: var(--delay, 0ms);
+  }
+  .stagger > [data-lead] {
+    transform: translateY(12px);
+  }
+  .stagger > [data-fade] {
+    transform: none;
+  }
+  .stagger.in > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Masked heading reveal (MaskReveal.tsx): the line rises out of its own clip box. */
+  .mask {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+  }
+  .mask > span {
+    display: block;
+    transform: translateY(105%);
+    transition: transform 700ms var(--ease-out);
+  }
+  .mask.in > span {
+    transform: none;
+  }
+
+  /* SVG line drawing: every shape carries pathLength="1". Explanatory, seen once per
+     visit, so it is allowed to run longer than UI motion. */
+  .draw [data-draw] {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 900ms var(--ease-in-out);
+    transition-delay: calc(var(--d, 0) * 70ms);
+  }
+  .draw [data-fade] {
+    opacity: 0;
+    transition: opacity 300ms var(--ease-out);
+    transition-delay: calc(var(--d, 0) * 70ms + 450ms);
+  }
+  .draw.in [data-draw] {
+    stroke-dashoffset: 0;
+  }
+  .draw.in [data-fade] {
+    opacity: 1;
+  }
+
+  /* Rendered Markdown from content/*.md and docs/*.md */
+  .prose-arm {
+    overflow-wrap: anywhere;
+    @apply text-[15px] leading-relaxed text-paper/80;
+  }
+  .prose-arm > * + * {
+    @apply mt-4;
+  }
+  .prose-arm h2 {
+    @apply mt-12 font-sans text-2xl font-medium tracking-tight text-paper;
+  }
+  .prose-arm h3 {
+    @apply mt-8 font-mono text-xs uppercase tracking-[0.16em] text-scope;
+  }
+  .prose-arm strong {
+    @apply font-medium text-paper;
+  }
+  .prose-arm a {
+    @apply text-scope underline decoration-scope/40 underline-offset-4;
+  }
+  .prose-arm ul {
+    @apply list-none space-y-2 pl-0;
+  }
+  .prose-arm ul > li {
+    @apply relative pl-5;
+  }
+  .prose-arm ul > li::before {
+    content: "";
+    @apply absolute left-0 top-[0.7em] h-px w-3 bg-signal;
+  }
+  .prose-arm ol {
+    @apply list-decimal space-y-2 pl-5 marker:font-mono marker:text-mute;
+  }
+  .prose-arm code {
+    @apply rounded-sm bg-white/5 px-1.5 py-0.5 font-mono text-[0.85em] text-paper;
+  }
+  .prose-arm pre {
+    @apply overflow-x-auto bg-black/40 p-4 font-mono text-xs leading-relaxed;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .prose-arm pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-arm blockquote {
+    @apply border-l-2 border-signal/60 pl-4 text-paper/70;
+  }
+  .prose-arm table {
+    @apply block w-full overflow-x-auto font-mono text-xs;
+  }
+  .prose-arm th {
+    @apply whitespace-nowrap px-3 py-2 text-left font-normal uppercase tracking-wider text-mute;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .prose-arm td {
+    @apply px-3 py-2 align-top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* Reduced motion: keep the fades, drop the movement and the delays. */
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *,
+  .stagger > [data-lead] {
+    transform: none !important;
+    transition: opacity 200ms ease !important;
+    transition-delay: 0ms !important;
+  }
+  .mask > span {
+    transform: none !important;
+    transition: none !important;
+  }
+  .draw [data-draw] {
+    stroke-dashoffset: 0 !important;
+    transition: none !important;
+  }
+  .draw [data-fade] {
+    transition: opacity 200ms ease !important;
+    transition-delay: 0ms !important;
+  }
+  .press:active {
+    transform: none;
+  }
+}
