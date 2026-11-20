@@ -50,13 +50,26 @@ poses:
   home: {x: 150, y: 0, z: 80, pitch: -90}
   # Resting pose for arming/disarming: upper arm upright and forearm folded down, so gravity
   # barely loads the shoulder. Given as joint angles because it must not depend on IK.
-  park: {theta0: 0, theta1: 90, theta2: -130, theta3: -40}
+  # theta3 -20, not -40: at -40 the hand dips ~5 mm into the base's 170 mm lid (Nov 16); -20 clears it by ~35.
+  park: {theta0: 0, theta1: 90, theta2: -130, theta3: -20}
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
   r_min: 90             # closer than this, the gripper meets the base (base radius ~60 mm, estimate)
   r_max: 210            # IK reaches ~224 when picking at z = 15, but a nearly straight arm is sloppy
   z_min: 5              # never drive the jaws into the table
   z_max: 250
+
+base_clearance:  # D23 (Nov 17): poses inside the joint limits that still hit Siddharth's base (arm/clearance.py)
+  # All in the arm's vertical plane, from the SHOULDER AXIS (so shoulder_height doesn't matter).
+  lid_below_shoulder: 50          # lid top is 50 below the shoulder axis: the bracket's axis is 50.0 above its underside
+  box_half: 85                    # 170 mm square box (+ tray + lid), turns with the arm
+  plate_r: 100                    # fixed base plate reaches 100 mm from the axis
+  plate_top_below_shoulder: 168.5 # plate top 6 mm above the table, shoulder axis 174.5 above it (CAD, Nov 17)
+  forearm_half_width: 18          # Arm Human forearm skin: +-18 mm around the elbow -> wrist line
+  hand_origin_from_wrist: 39      # gripper frame origin on the approach line, 39 mm out from the wrist axis
+  hand_body: [40, -19, 24]        # body / palm cover: |u| <= 40, v from -19 to 24 along the approach
+  hand_fingers: [32, 24, 65]      # flat fingers: |u| <= 32, v from 24 to 65
+  margin: 3                       # grow every obstacle by this much; the 2D model matched the 20-pose CAD check
 
 # Assembly note for the CAD and the build: the window centre is where the servo sits at 1500 us.
 # Put each horn on with the servo at 1500 us and the joint at its window centre:

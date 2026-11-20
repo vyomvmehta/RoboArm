@@ -32,6 +32,8 @@
 | `E,9,3*4F` | Error code 3 for seq 9 |
 | `R,0,fw0.1,DISARMED*71` | Boot banner |
 
+The version in that banner is just a field: parsers must accept any string there. The firmware on the board reports its own (`fw0.2` since the motion limiter landed).
+
 ## 3. Laptop → Arduino
 
 | Type | Fields | Meaning |
@@ -73,7 +75,7 @@ power-on / reset ──► DISARMED ──A──► ARMED ──(no C for 300 m
 ```
 
 - **DISARMED:** no pulses (servos limp). The arm must be designed to **rest safely in its park pose when limp** (a mechanical requirement for Ishaan, so a limp arm doesn't fall and hit anything).
-- **ARMED:** firmware assumes the arm starts at the park pose (there's no position feedback). It ramps every joint towards the latest `C` target through the **motion limiter** (°/s cap per joint).
+- **ARMED:** firmware assumes the arm starts at the park pose (there's no position feedback). It ramps every joint towards the latest `C` target through the **motion limiter** (°/s cap per joint). Concretely: the **first** `C` after `A` is taken as the truth about where the arm is and is written straight out, and every `C` after it is ramped. That makes the laptop sending park as its first frame (`arm/control.py` `arm()`) part of the contract, not just good manners.
 - **HOLD:** keeps sending the last *current* pulses. A valid `C` returns to ARMED, and the limiter makes that resume smooth.
 - **FAULT:** outputs off until the board is reset.
 
@@ -101,5 +103,5 @@ A reset mid-run (cable pulled) leaves the arm limp, so the park-pose requirement
 
 - **HOLD timeout? (found on the bench, 2026-11-10).** If the laptop server dies without a clean exit (crash, force-kill, laptop sleeps), no `D` is sent: the watchdog puts the arm in HOLD, and HOLD keeps the last pulses **forever**, with every servo powered and straining. Option: after N seconds of HOLD (10–30 s?), go DISARMED. Trade-off: going limp drops the arm unless it is near the park pose. Decide together (Ishaan owns the firmware).
 - Park and home pose angles (after the CAD exists).
-- Per-joint speed caps (°/s) for the motion limiter. **Implemented by Ishaan** (firmware owner since D8); values tuned during calibration (Nov 21).
+- ~~Per-joint speed caps (°/s) for the motion limiter.~~ **Done (Nov 15, PR #12).** The firmware caps each joint independently, every 20 ms, from `config/arm.yaml` `speed_limits_deg_per_s` (45 °/s on J0–J2, 90 °/s on J3–J4) and `us_per_deg` in `config/calibration.yaml`. Those are the laptop's files, so the firmware copies the numbers: **if either changes, change `STEP_MILLI_US` in the sketch too.** Values still get retuned at calibration (Nov 21–23).
 - Whether the laptop should be able to change speed caps at run time (probably not in v1).

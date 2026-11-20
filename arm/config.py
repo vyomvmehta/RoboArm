@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+from arm.clearance import base_collision
 from arm.kinematics import ArmGeometry, JointAngles, JointLimits, ik
 
 DEFAULT_PATH = Path(__file__).resolve().parent.parent / "config" / "arm.yaml"
@@ -23,6 +24,7 @@ class ArmConfig:
     park: JointAngles
     workspace: dict
     speed_limits_deg_per_s: dict
+    base_clearance: dict  # arm/clearance.py model of Siddharth's base (D23)
     raw: dict  # the whole file, for anything not wrapped above
 
 
@@ -54,6 +56,10 @@ def load_arm(path: Path | str = DEFAULT_PATH) -> ArmConfig:
     p = raw["poses"]["park"]
     park = JointAngles(*(math.radians(p[k]) for k in ("theta0", "theta1", "theta2", "theta3")))
     limits.check(park)
+    clearance = raw["base_clearance"]
+    why = base_collision(geometry, park, clearance)
+    if why:
+        raise ValueError(f"park pose hits the base: {why}")
 
     return ArmConfig(
         geometry=geometry,
@@ -63,5 +69,6 @@ def load_arm(path: Path | str = DEFAULT_PATH) -> ArmConfig:
         park=park,
         workspace=raw["workspace"],
         speed_limits_deg_per_s=raw["speed_limits_deg_per_s"],
+        base_clearance=clearance,
         raw=raw,
     )
