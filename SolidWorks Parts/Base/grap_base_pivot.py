@@ -18,6 +18,10 @@ How it turns: the sun gear is fixed to the base. The servo sits in the box with 
 on its horn. Turning the servo walks the planet round the sun and carries the box with it.
 Box angle = servo angle x (PLANET_T / SUN_T) = 2.25, so 160 deg of servo gives 360 deg of box.
 
+Screws into the box floor (all blind pilots, 2.5 mm x 4.5 deep, so no screw tip pokes out under
+the floor onto the track): wheel forks 8 x M3x8 (2 per fork, through the side tabs), servo bridge
+4 x M3x6 (through its feet). The forks must be screwed down: the wheels hold the box up through them.
+
 Cables: the USB and power cables come in through the back wall and wrap once around the base
 in a full turn, so leave them slack there.
 """
@@ -49,6 +53,11 @@ MODULE, SUN_T, PLANET_T = 1.25, 16, 36
 BACKLASH = 0.2
 SERVO_DIR = 180.0                      # which side of the box the servo sits on, degrees
 FIT = 0.3
+
+# ---- Screws into the box floor ----
+PILOT_D, PILOT_DEPTH = 2.5, 4.5        # M3 self-tapping pilot, blind (floor is 5 thick)
+FORK_TAB_T, FORK_TAB_W = 4.0, 8.0      # fork side tabs, extended inward past the slot onto solid floor
+FORK_SCREW_R, FORK_SCREW_Y = 55.5, 13.5   # screw position: radius from the axis, sideways from the wheel
 
 # ---- Base ----
 PLATE_D, PLATE_T = 200.0, 6.0
@@ -199,6 +208,12 @@ def fork_part():
     f = f.union(cq.Workplane("XY").center((out0 + out1) / 2, 0).rect(out1 - out0, 30).extrude(h))
     for s in (1, -1):
         f = f.union(cq.Workplane("XY").center((in0 + out1) / 2, s * 13.5).rect(out1 - in0, 3).extrude(3))
+    # screw tabs: the side rails carry on inward onto solid floor (r 52-59), one M3 hole each
+    t0, t1 = FORK_SCREW_R - 3.5 - r_mid, in1
+    for s in (1, -1):
+        f = f.union(cq.Workplane("XY").center((t0 + t1) / 2, s * FORK_SCREW_Y).rect(t1 - t0, FORK_TAB_W).extrude(FORK_TAB_T))
+    f = f.cut(cq.Workplane("XY").pushPoints([(FORK_SCREW_R - r_mid, s * FORK_SCREW_Y) for s in (1, -1)])
+              .circle(1.7).extrude(FORK_TAB_T))
     gap = (SLOT_R_OUT - SLOT_R_IN - BRG_W) / 2 - 0.2
     for x, d in ((in1, 1), (out0, -1)):
         f = f.union(cq.Workplane("YZ").workplane(offset=x).center(0, axle_h).circle(5.8).extrude(d * gap))
@@ -286,6 +301,22 @@ def board_blocks():
     return out
 
 
+def floor_pilots():
+    """Pilot holes in the box floor, (x, y) from the rotation axis: 2 per wheel fork + 4 for the servo bridge."""
+    pts = []
+    for a in SLOT_ANGLES:
+        c, s_ = math.cos(math.radians(a)), math.sin(math.radians(a))
+        for sy in (1, -1):
+            x, y = FORK_SCREW_R, sy * FORK_SCREW_Y
+            pts.append((x * c - y * s_, x * s_ + y * c))
+    x0, x1 = servo_cx - 32, servo_cx + 32          # same as bridge_part()
+    t = math.radians(SERVO_DIR - 180)
+    for x in (x0 + 8, x1 - 8):
+        for y in (45.0, -45.0):                      # y_out + 5
+            pts.append((x * math.cos(t) - y * math.sin(t), x * math.sin(t) + y * math.cos(t)))
+    return pts
+
+
 def box_standin():
     b = cq.Workplane("XY").rect(BOX_SIDE, BOX_SIDE).extrude(BOX_H).edges("|Z").fillet(BOX_CORNER_R)
     b = b.cut(cq.Workplane("XY").workplane(offset=BOX_FLOOR)
@@ -294,6 +325,8 @@ def box_standin():
     b = b.cut(cq.Workplane("XY").workplane(offset=BOX_H - 12).pushPoints(corner_points())
               .circle(1.25).extrude(12))                      # M3 pilots for the lid/tray bolts
     b = b.union(cq.Workplane("XY").workplane(offset=BOX_FLOOR).rect(BOSS_SIDE, BOSS_SIDE).extrude(BOSS_H))
+    b = b.cut(cq.Workplane("XY").workplane(offset=BOX_FLOOR - PILOT_DEPTH).pushPoints(floor_pilots())
+              .circle(PILOT_D / 2).extrude(PILOT_DEPTH))
     b = b.cut(cq.Workplane("XY").circle(BOX_HOLE_D / 2).extrude(BOX_FLOOR + BOSS_H))
     ring = cq.Workplane("XY").circle(SLOT_R_OUT).circle(SLOT_R_IN).extrude(BOX_FLOOR)
     tan30 = math.tan(math.radians(30))
