@@ -1,0 +1,104 @@
+.stage {
+  background: var(--mat);
+  color: var(--chalk);
+  overflow: hidden;       /* the mat grid is drawn far past the drawing and clipped here */
+  position: relative;
+}
+
+.inner {
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: var(--space-6) var(--gutter) var(--space-8);
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(17rem, 1fr);
+  grid-template-areas: "head head" "draw read";
+  gap: var(--space-5) var(--space-7);
+  align-items: end;
+}
+
+/* ---- the headline is the control ---- */
+.headline {
+  grid-area: head;
+  position: relative;
+  z-index: 1;
+  font-size: clamp(2.75rem, 1rem + 5vw, 5.75rem);
+  max-width: 15em;
+}
+
+.field { display: inline-block; }
+.field input {
+  font: inherit;
+  color: var(--signal);
+  background: none;
+  border: 0;
+  border-bottom: 0.07em solid var(--signal);
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.field input::-webkit-outer-spin-button,
+.field input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.field input:focus-visible { outline: 3px solid var(--signal); outline-offset: 0.06em; }
+
+/* ---- the drawing ---- */
+.drawing { grid-area: draw; }
+/* Big, but never taller than what is left of the first screen under the headline. */
+.svg { width: 100%; max-height: max(22rem, calc(100svh - 21rem)); overflow: visible; cursor: crosshair; user-select: none; }
+
+.grid10 { fill: none; stroke: var(--matline); stroke-width: 0.5; opacity: 0.22; }
+.grid50 { fill: none; stroke: var(--matline); stroke-width: 0.9; opacity: 0.45; }
+
+.table { stroke: var(--chalk); stroke-width: 1.6; }
+.scale { font-family: var(--font-text); font-size: 10.5px; font-weight: 600; fill: var(--chalk); font-variant-numeric: tabular-nums; }
+.note { font-family: var(--font-text); font-size: 10.5px; fill: var(--chalk); opacity: 0.85; }
+
+.workspace { fill: rgb(244 247 242 / 0.05); stroke: var(--chalk); stroke-width: 0.9; stroke-dasharray: 5 4; }
+
+.body rect, .body path { fill: var(--pla); stroke: var(--chalk); stroke-width: 1.3; stroke-linejoin: round; }
+
+.edge { stroke: var(--chalk); stroke-linecap: round; }
+.pla { stroke: var(--pla); stroke-linecap: round; }
+.rod line { stroke: var(--chalk); stroke-width: 2.4; stroke-linecap: round; }
+.pin circle { fill: var(--chalk); }
+
+.ghost { fill: none; stroke: var(--chalk); stroke-width: 1.4; stroke-dasharray: 3 5; stroke-linecap: round; opacity: 0.7; }
+
+.target { cursor: grab; touch-action: none; }
+.target:active { cursor: grabbing; }
+.hit { fill: transparent; }
+.ring { fill: none; stroke: var(--signal); stroke-width: 2.6; }
+.cross { stroke: var(--signal); stroke-width: 2.6; stroke-linecap: round; }
+.target[data-refused="true"] .ring, .target[data-refused="true"] .cross { stroke: var(--power); }
+.target[data-refused="true"] .ring { stroke-dasharray: 4 3; }
+
+/* ---- what the laptop works out ---- */
+.readout { grid-area: read; position: relative; z-index: 1; display: grid; gap: var(--space-4); max-width: 30rem; }
+
+.status { font-weight: 700; min-height: 3em; }
+.status[data-refused="true"] { background: var(--chalk); color: #8c1d18; padding: var(--space-2) var(--space-3); border-left: 0.4rem solid var(--power); }
+
+.table5 { border-collapse: collapse; width: 100%; }
+.table5 th, .table5 td { padding: var(--space-1) 0; text-align: right; white-space: nowrap; border-top: 1px solid rgb(244 247 242 / 0.25); }
+.table5 thead th { border-top: 0; font-size: var(--text-sm); font-weight: 600; opacity: 0.85; padding-bottom: var(--space-2); }
+.table5 th:first-child { text-align: left; }
+.table5 tbody th { font-weight: 600; }
+.table5 tbody td { font-size: var(--text-lg); font-weight: 700; color: var(--signal); }
+
+.sent { display: grid; gap: var(--space-1); }
+.sent span { font-size: var(--text-sm); font-weight: 600; opacity: 0.85; }
+.sent code { font-size: clamp(0.95rem, 0.8rem + 0.7vw, 1.2rem); color: var(--signal); overflow-wrap: anywhere; }
+
+.explain { font-size: var(--text-sm); max-width: 46ch; opacity: 0.92; }
+
+/* ---- phone: headline, then the arm, then the numbers ---- */
+@media (max-width: 58rem) {
+  .inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "draw" "read"; gap: var(--space-5); padding-top: var(--space-5); }
+  .headline { max-width: none; }
+  .svg { max-height: none; }
+  .scale, .note { font-size: 14px; }
+  .readout { max-width: none; }
+}
