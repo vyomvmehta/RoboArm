@@ -26,6 +26,16 @@
   .views figure{margin:0} .views figcaption{font-size:.8rem;color:#5d6560}
   canvas{width:100%;height:auto;background:#fff;border:1px solid #c7cdc8;border-radius:8px}
   #top{cursor:crosshair}
+  .demo button{background:#dde2dd;color:#1d211f;padding:8px 14px}
+  .demo .grip button{min-width:84px}
+  #runseq{background:#1f5f99;color:#fff} #stopseq{background:#7a0000;color:#fff}
+  #poses{list-style:none;padding:0;margin:8px 0;counter-reset:n}
+  #poses li{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #e3e7e3}
+  #poses li::before{counter-increment:n;content:counter(n) ".";font-family:monospace;color:#5d6560;width:22px}
+  #poses li span{flex:1;font-family:monospace}
+  #poses li.now{background:#e6f0fa}
+  #poses li button{padding:4px 10px}
+  #posename{font-size:1rem;padding:8px;border:1px solid #c7cdc8;border-radius:6px;flex:1;min-width:120px}
 </style></head>
 <body>
 <h1>RoboArm</h1>
@@ -37,6 +47,25 @@
 <div id="info"></div>
 <div id="sliders"></div>
 <div id="msg"></div>
+
+<h2>Demo controls</h2>
+<div class="demo">
+  <div class="bar grip">
+    <button id="gopen" disabled>Open</button>
+    <button id="gclose" disabled>Close</button>
+    <button id="home" disabled>Home</button>
+  </div>
+  <div class="bar">
+    <input id="posename" placeholder="pose name, e.g. above block">
+    <button id="savepose" disabled>Save current pose</button>
+  </div>
+  <ol id="poses"></ol>
+  <div class="bar">
+    <button id="runseq" disabled>Run sequence</button>
+    <button id="stopseq" disabled>Stop sequence</button>
+    <span id="seqstate" class="val"></span>
+  </div>
+</div>
 
 <h2>Move to point</h2>
 <div class="pt">
@@ -65,7 +94,42 @@ function setArmed(a) {             // sliders only work while armed
   $("arm").disabled = a; $("disarm").disabled = !a;
   document.querySelectorAll("input[type=range]").forEach(s => s.disabled = !a);
   $("go").disabled = !a;
+  ["gopen", "gclose", "home", "savepose"].forEach(id => $(id).disabled = !a);
+  renderPoses(poseNames, seqStep);
 }
+
+// ---------- demo controls: saved poses + sequence (arm/demo.py) ----------
+let poseNames = [], seqStep = null, seqRunning = false;
+const send = (o) => sock.send(JSON.stringify(o));
+function renderPoses(names, step) {
+  const list = $("poses"); list.innerHTML = "";
+  names.forEach(n => {
+    const li = document.createElement("li");
+    if (step && step.endsWith(": " + n)) li.className = "now";
+    li.innerHTML = `<span></span><button>Go</button><button title="delete">✕</button>`;
+    li.querySelector("span").textContent = n;
+    const [go, del] = li.querySelectorAll("button");
+    go.disabled = !armed || seqRunning;
+    go.onclick = () => send({type: "goto_pose", name: n});
+    del.disabled = seqRunning;
+    del.onclick = () => { if (confirm(`Delete pose "${n}"?`)) send({type: "delete_pose", name: n}); };
+    list.appendChild(li);
+  });
+  $("runseq").disabled = !armed || seqRunning || names.length === 0;
+  $("stopseq").disabled = !seqRunning;
+  $("seqstate").textContent = seqRunning ? `running ${step || ""}` : "";
+}
+$("gopen").onclick = () => send({type: "gripper", open: true});
+$("gclose").onclick = () => send({type: "gripper", open: false});
+$("home").onclick = () => send({type: "home"});
+$("savepose").onclick = () => {
+  const n = $("posename").value.trim();
+  if (!n) return say("type a name for the pose first", true);
+  if (poseNames.includes(n) && !confirm(`Overwrite pose "${n}"?`)) return;
+  send({type: "save_pose", name: n}); $("posename").value = "";
+};
+$("runseq").onclick = () => send({type: "run_sequence", names: poseNames});
+$("stopseq").onclick = () => send({type: "stop_sequence"});
 
 sock.onclose = () => { $("state").textContent = "disconnected: reload"; $("state").className = "DISCONNECTED"; setArmed(false); };
 sock.onmessage = (e) => {
@@ -81,8 +145,15 @@ sock.onmessage = (e) => {
       (m.blocked ? `\nHOLDING: ${m.blocked}` : "") +
       (m.moving ? "\nmoving..." : "");
     draw(m.target_values, m.goal_values);
+    const names = m.poses || [];
+    if (names.join("|") !== poseNames.join("|") || m.sequence_step !== seqStep || !!m.sequence_running !== seqRunning) {
+      poseNames = names; seqStep = m.sequence_step; seqRunning = !!m.sequence_running;
+      renderPoses(poseNames, seqStep);
+    }
   } else if (m.type === "pose") {   // the sliders show where the arm is heading (park, or a point's IK)
     setSliders(m.values); say(m.point ? "point accepted: ramping there" : "armed at the park pose");
+  } else if (m.type === "info") {
+    say(m.msg);
   } else if (m.type === "error") {
     say(m.msg, true);
   } else if (m.type === "busy") {
