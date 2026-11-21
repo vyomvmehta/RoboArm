@@ -1,0 +1,114 @@
+/* Base: reset, element defaults and the .prose rules that style plain semantic HTML.
+   Content can be written as bare <h2>, <p>, <ul>, <table>, <pre>, <figure> inside <Prose>
+   and picks up the site's look with no class names. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-h) + var(--space-4));
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+main { flex: 1; }
+
+/* Headlines: the condensed cut, heavy and tight, in sentence case. */
+h1, h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+h1 { font-size: var(--text-display); line-height: 0.9; }
+h2 { font-size: var(--text-2xl); }
+
+h3, h4 { margin: 0; font-family: var(--font-text); font-weight: 700; line-height: 1.2; }
+h3 { font-size: var(--text-lg); }
+h4 { font-size: var(--text-base); }
+
+p, ul, ol, dl, dd, figure, blockquote, pre, table { margin: 0; }
+p { text-wrap: pretty; }
+
+a { color: var(--link); text-decoration-thickness: 0.08em; text-underline-offset: 0.2em; }
+a:hover { text-decoration-thickness: 0.16em; }
+
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; }
+
+img, svg, video { display: block; max-width: 100%; height: auto; }
+
+/* Monospace only for real machine text. */
+code, kbd, samp, pre { font-family: var(--font-machine); font-size: 0.88em; }
+
+::selection { background: var(--signal); color: var(--pla); }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* Measured values: tabular figures so digits do not jump as they change. */
+.num { font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+
+.skip-link {
+  position: absolute; left: var(--gutter); top: -5rem; z-index: 50;
+  background: var(--signal); color: var(--pla); font-weight: 700;
+  padding: var(--space-2) var(--space-4); text-decoration: none;
+}
+.skip-link:focus { top: var(--space-2); }
+
+/* ------------------------------------------------------------------ prose */
+.prose { max-width: var(--measure); }
+.prose > * + * { margin-top: var(--space-4); }
+.prose > h2 { margin-top: var(--space-8); }
+.prose > h2:first-child { margin-top: 0; }
+.prose > h3 { margin-top: var(--space-6); }
+.prose > h2 + *, .prose > h3 + *, .prose > h4 + * { margin-top: var(--space-3); }
+
+.prose ul, .prose ol { padding-left: 1.2em; }
+.prose li + li { margin-top: var(--space-2); }
+.prose ol > li::marker { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.prose :not(pre) > code { background: var(--page-alt); padding: 0.1em 0.3em; }
+
+.prose pre {
+  background: var(--mat-deep);
+  color: var(--chalk);
+  padding: var(--space-4) var(--space-5);
+  overflow-x: auto;
+  line-height: 1.55;
+  font-size: var(--text-sm);
+}
+
+.prose blockquote { border-left: 0.3rem solid var(--mat); padding-left: var(--space-4); font-size: var(--text-lg); }
+
+/* Tables scroll sideways inside their own box on narrow screens; the page never does. */
+.table-wrap { overflow-x: auto; max-width: 100%; }
+.prose table, .table { width: 100%; border-collapse: collapse; line-height: 1.35; }
+.prose th, .prose td, .table th, .table td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--space-3) var(--space-5) var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.prose thead th, .table thead th { font-weight: 700; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+
+.prose figure > figcaption { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--ink-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

@@ -3,11 +3,13 @@
 Order of checks (CLAUDE.md section 5.2: reject, say why, send nothing):
   1. the workspace box in config/arm.yaml (cheap, and catches "inside the base" / "into the table")
   2. inverse kinematics with the joint limits (unreachable, or reachable only past a limit)
+  3. base clearance (D23): the solution must not put the forearm or hand into the base
 """
 from __future__ import annotations
 
 import math
 
+from arm.clearance import base_collision
 from arm.config import ArmConfig
 from arm.kinematics import ik
 
@@ -25,4 +27,7 @@ def point_to_joints(cfg: ArmConfig, x: float, y: float, z: float, pitch_deg: flo
     if not ws["z_min"] <= z <= ws["z_max"]:
         raise ValueError(f"z = {z:.0f} mm is outside the workspace ({ws['z_min']}-{ws['z_max']} mm)")
     a = ik(cfg.geometry, x, y, z, math.radians(pitch_deg), limits=cfg.limits)
+    why = base_collision(cfg.geometry, a, cfg.base_clearance)
+    if why:
+        raise ValueError(why)
     return [round(math.degrees(v), 3) for v in (a.theta0, a.theta1, a.theta2, a.theta3)]

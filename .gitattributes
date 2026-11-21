@@ -12,3 +12,6 @@
 *.3mf binary
 *.step binary
 *.STEP binary
+
+# shell scripts must keep LF, or they fail with "bad interpreter" under Git Bash / WSL
+*.sh text eol=lf
