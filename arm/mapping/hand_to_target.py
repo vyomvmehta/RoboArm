@@ -16,6 +16,8 @@ Steps, in order:
   3. 0..1 -> the WORK BOX (a small box around the pick area, config/gestures.yaml `mapping`).
   4. Clamp to the work box, then to the arm's workspace ring (r_min..r_max, z_min..z_max).
      `clamped` says it happened, so the page can show "hand outside the box".
+     The whole work box is checked reachable when the mapper is built (check_work_box), so the
+     ring step is only a backstop and a clamped target is always reachable.
   5. IK through point_to_joints. If it refuses: `joints` is None and `refused` says why.
 
 Filter (V2-4) and depth (V2-6) plug in without changes here: pass `smooth=` a callable
@@ -48,6 +50,8 @@ def load_mapping_config(path: Path | str = DEFAULT_PATH) -> dict:
         lo, hi = m["work_box"][k]
         if lo >= hi:
             raise ValueError(f"mapping.work_box.{k}: {lo} must be below {hi}")
+    if not m["box_check_mm"] > 0:
+        raise ValueError(f"mapping.box_check_mm must be positive, got {m['box_check_mm']!r}")
     return m
 
 
@@ -72,12 +76,42 @@ def _lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * t
 
 
+def check_work_box(arm: ArmConfig, cfg: dict) -> None:
+    """Raise ValueError unless every point of the work box is reachable at the mapping pitch.
+
+    Walks a grid (spacing <= cfg['box_check_mm'], always including the faces and corners) through
+    point_to_joints, the same workspace + IK + joint-limit + base-clearance (D23) check the arm
+    uses, so a target inside the box is never refused. Clamping to the box is then enough to
+    guarantee a reachable target, and clamping each axis on its own can't make the path jump.
+    """
+    wb, step = cfg["work_box"], float(cfg["box_check_mm"])
+    key = (repr(arm.raw), repr(wb), cfg["pitch_deg"], step)
+    if key in _BOX_OK:
+        return
+    axes = [np.linspace(lo, hi, max(2, math.ceil((hi - lo) / step) + 1))
+            for lo, hi in (wb["x"], wb["y"], wb["z"])]
+    for x in axes[0]:
+        for y in axes[1]:
+            for z in axes[2]:
+                try:
+                    point_to_joints(arm, float(x), float(y), float(z), float(cfg["pitch_deg"]))
+                except ValueError as e:
+                    raise ValueError(
+                        f"mapping.work_box is not fully reachable: ({x:.0f}, {y:.0f}, {z:.0f}) mm "
+                        f"is refused ({e}). Shrink the box in config/gestures.yaml.") from e
+    _BOX_OK.add(key)
+
+
+_BOX_OK: set = set()                      # boxes already checked (the grid takes ~1 s)
+
+
 class HandMapper:
     def __init__(self, arm: ArmConfig, cfg: dict | None = None,
                  smooth: Callable[[float, tuple], tuple] | None = None):
         self.arm = arm
         self.cfg = cfg or load_mapping_config()
         self.smooth = smooth              # V2-4 filter; None = pass straight through
+        check_work_box(arm, self.cfg)     # fail at start-up, not mid-follow
 
     def hand_uv(self, frame: HandFrame) -> tuple[float, float, bool]:
         """Palm centre -> (u, v) in 0..1 across the hand box, mirrored; plus 'was outside'."""
