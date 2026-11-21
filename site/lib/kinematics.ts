@@ -1,6 +1,7 @@
 // A browser copy of the arm's own maths, kept line-for-line with the Python it mirrors:
 //   arm/kinematics/kinematics.py  ik()            (derived by hand first, then coded)
-//   arm/targets.py                point_to_joints (workspace box, then IK, then limits)
+//   arm/targets.py                point_to_joints (workspace box, then IK, then limits, then base)
+//   arm/clearance.py              base_collision  (D23: forearm or hand driven into the base)
 //   arm/calibration.py            joint_to_pulse  (angle -> pulse, refuse rather than clamp)
 //   arm/comms/protocol.py         encode          (XOR checksum, as two hex digits)
 //   arm/motion.py + control.py    step_toward     (all joints arrive together) + four-bar cap
@@ -20,6 +21,20 @@ export type ArmConfig = {
   heartbeatHz: number;
   servo: { base: ServoJoint; shoulder: ServoJoint; elbow: ServoJoint; fourBarElbow: boolean; wrist: ServoJoint; gripperOpenUs: number };
   home: { r: number; z: number };
+  clearance: Clearance;
+};
+
+/** config/arm.yaml base_clearance (D23): mm in the arm's plane, measured from the shoulder axis. */
+export type Clearance = {
+  lidBelowShoulder: number;
+  boxHalf: number;
+  plateR: number;
+  plateTopBelowShoulder: number;
+  forearmHalfWidth: number;
+  handOriginFromWrist: number;
+  handBody: [number, number, number]; // half width u, v from, v to
+  handFingers: [number, number, number];
+  margin: number;
 };
 
 export type Angles = { theta1: number; theta2: number; theta3: number }; // degrees
@@ -65,7 +80,62 @@ export function solve(cfg: ArmConfig, r: number, z: number): Solve {
       return { ok: false, why: `${name} = ${f1(angles[name])} deg is outside [${f1(lo)}, ${f1(hi)}] deg` };
     }
   }
+  const hit = baseCollision(cfg, angles, phi);
+  if (hit) return { ok: false, why: hit };
   return { ok: true, angles };
+}
+
+const STEP_MM = 2; // sampling pitch, same as arm/clearance.py (well under the 3 mm margin)
+
+function span(lo: number, hi: number): number[] {
+  const n = Math.max(1, Math.ceil((hi - lo) / STEP_MM));
+  return Array.from({ length: n + 1 }, (_, i) => lo + ((hi - lo) * i) / n);
+}
+
+/** arm/clearance.py base_collision: null if the forearm and hand clear the base, else the reason.
+ *  Points are sampled in the same order as the Python, so both report the same first hit. */
+export function baseCollision(cfg: ArmConfig, a: Angles, phi: number): string | null {
+  const c = cfg.clearance;
+  const g = cfg.geometry;
+  const m = c.margin;
+  const boxR = c.boxHalf + m;
+  const boxZ = -c.lidBelowShoulder + m;
+  const plateR = c.plateR + m;
+  const plateZ = -c.plateTopBelowShoulder + m;
+  const check = (part: string, r: number, z: number): string | null => {
+    let where: string;
+    if (Math.abs(r) <= boxR && z <= boxZ) where = "lid / tray";
+    else if (Math.abs(r) <= plateR && z <= plateZ) where = "base plate";
+    else return null;
+    return `pose would drive the ${part} into the base ${where} (r ${r.toFixed(0)}, z ${z.toFixed(0)} mm from the shoulder axis)`;
+  };
+
+  const a1 = a.theta1 * RAD;
+  const a12 = (a.theta1 + a.theta2) * RAD;
+  const er = g.l1 * Math.cos(a1), ez = g.l1 * Math.sin(a1); // elbow axis
+  const wr = er + g.l2 * Math.cos(a12), wz = ez + g.l2 * Math.sin(a12); // wrist axis
+
+  // Forearm: a band around the elbow -> wrist line.
+  const fr = Math.cos(a12), fz = Math.sin(a12);
+  const nr = -fz, nz = fr;
+  for (const s of span(0, g.l2))
+    for (const w of span(-c.forearmHalfWidth, c.forearmHalfWidth)) {
+      const hit = check("forearm", er + s * fr + w * nr, ez + s * fz + w * nz);
+      if (hit) return hit;
+    }
+
+  // Hand, in the gripper frame: v along the approach, u across it.
+  const dr = Math.cos(phi), dz = Math.sin(phi);
+  const xr = -dz, xz = dr;
+  const or = wr + c.handOriginFromWrist * dr, oz = wz + c.handOriginFromWrist * dz;
+  const parts: [string, [number, number, number]][] = [["hand (palm cover)", c.handBody], ["hand (fingers)", c.handFingers]];
+  for (const [part, [halfU, vLo, vHi]] of parts)
+    for (const v of span(vLo, vHi))
+      for (const u of span(-halfU, halfU)) {
+        const hit = check(part, or + v * dr + u * xr, oz + v * dz + u * xz);
+        if (hit) return hit;
+      }
+  return null;
 }
 
 /** Joint positions in the side view, mm, table at z = 0. */

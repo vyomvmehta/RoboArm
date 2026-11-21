@@ -2,7 +2,7 @@
 // never describe a different arm from the one the code drives (Ishaan's review of #19).
 // When #17 lands, this can become a thin adapter over its loadArm() in lib/repo.ts.
 //
-//   config/arm.yaml          links, limits, windows, workspace, speeds, home pose, four-bar crank
+//   config/arm.yaml          links, limits, windows, workspace, speeds, home pose, four-bar crank, base clearance
 //   config/calibration.yaml  centre pulse, direction, us/deg, pulse range, four-bar window, gripper
 //   config/comms.yaml        heartbeat rate
 
@@ -34,6 +34,9 @@ export function loadArmConfig(): ArmConfig {
     maxUs: C[key].max_us,
   });
 
+  const bc = arm.base_clearance;
+  if (!bc) throw new Error("site build: config/arm.yaml has no base_clearance (D23)");
+
   const fourBar = arm.four_bar;
   if (!fourBar?.crank_mm) throw new Error("site build: config/arm.yaml has no four_bar.crank_mm");
 
@@ -63,5 +66,16 @@ export function loadArmConfig(): ArmConfig {
       gripperOpenUs: cal.gripper.open_us,
     },
     home: { r: Math.hypot(arm.poses.home.x, arm.poses.home.y), z: arm.poses.home.z },
+    clearance: {
+      lidBelowShoulder: bc.lid_below_shoulder,
+      boxHalf: bc.box_half,
+      plateR: bc.plate_r,
+      plateTopBelowShoulder: bc.plate_top_below_shoulder,
+      forearmHalfWidth: bc.forearm_half_width,
+      handOriginFromWrist: bc.hand_origin_from_wrist,
+      handBody: bc.hand_body,
+      handFingers: bc.hand_fingers,
+      margin: bc.margin,
+    },
   };
 }
