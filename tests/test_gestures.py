@@ -42,7 +42,7 @@ def hand(fingers="straight", thumb="out", shift=(400, 500), scale=1.0, pinch=Non
     (dict(fingers="straight", thumb="out"), "palm"),
     (dict(fingers="curled", thumb="tucked"), "fist"),
     (dict(fingers="curled", thumb="up"), "thumbs_up"),
-    (dict(fingers="straight", thumb="tucked"), "none"),      # four fingers, no thumb: not a command
+    (dict(fingers="straight", thumb="tucked"), "palm"),      # thumb ignored for the palm (Nov 20 clips)
 ])
 def test_each_command_gesture_is_recognised(args, want):
     assert classify(hand(**args), CFG) == want

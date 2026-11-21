@@ -5,7 +5,7 @@ answer. The thresholds live in config/gestures.yaml.
 
 Labels:
   "fist"       all four fingers curled, thumb tucked         -> command: go home
-  "palm"       all four fingers straight + thumb out         -> command: hold / stop following
+  "palm"       all four fingers straight (thumb ignored)     -> command: hold / stop following
   "thumbs_up"  fingers curled, thumb out and pointing up     -> command: replay the last recording
   "none"       anything else (including a pinch: the pinch is continuous, see pinch_fraction)
 """
@@ -63,7 +63,10 @@ def features(lm: np.ndarray, cfg: GestureConfig) -> dict:
 
 def classify(lm: np.ndarray, cfg: GestureConfig) -> str:
     f = features(lm, cfg)
-    if f["n_extended"] == 4 and f["thumb_out"]:
+    if f["n_extended"] == 4:
+        # Thumb ignored for the palm (Nov 20 clips): on a real open palm the thumb tip sits
+        # 0.32-0.63 palm from the index knuckle, overlapping a tucked thumb in a fist
+        # (0.23-0.51), so it can't separate them. Four straight fingers already does.
         return "palm"
     if f["n_extended"] == 0:
         if f["thumb_out"] and f["thumb_rise"] > cfg.thumbs_up_rise:

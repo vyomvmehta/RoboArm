@@ -1,12 +1,14 @@
 # V2 gesture thresholds (arm/gestures). Every ratio is divided by the palm size (wrist -> middle
 # knuckle), so the same numbers work near and far from the camera.
-# STARTING VALUES (Nov 20, from hand geometry, not yet from data): tune them on the recorded
+# Nov 20: thumb ratio + palm rule tuned on Vyom's clips (runs/hands/); the rest are still
+# STARTING VALUES (from hand geometry): tune them on the recorded
 # clips (docs/V2_TASKS.md V2-3) and write down what changed and why.
 
 finger_extended_ratio: 1.15   # finger counts as straight if |wrist->tip| > this x |wrist->PIP|
                               # (straight ~1.35, curled into the palm < 1.0)
-thumb_extended_ratio: 0.75    # thumb counts as out if |thumb tip -> index knuckle| > this x palm
-                              # (out ~1.0, tucked across the palm ~0.4)
+thumb_extended_ratio: 0.60    # thumb counts as out if |thumb tip -> index knuckle| > this x palm.
+                              # Nov 20 clips (5th-95th pct): fist 0.23-0.51, thumbs-up 0.67-1.51
+                              # -> 0.60 sits in the gap. (Was 0.75: open palms never counted.)
 thumbs_up_rise: 0.40          # thumbs-up also needs the thumb tip this x palm ABOVE its knuckle
 
 pinch_closed_ratio: 0.30      # |thumb tip -> index tip| / palm at or below this = fully closed
