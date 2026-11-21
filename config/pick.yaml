@@ -1,0 +1,35 @@
+# V2-16 point-to-pick (arm/pick). Front camera sees the table, the arm, the blocks and you.
+# STARTING VALUES (Nov 20): tune the colour on photos of the real table + block.
+
+# The 4 calibration marks (tape crosses on the table), in the arm frame, in CLICK ORDER:
+# far-left, far-right, near-right, near-left as seen from the camera. Measure them from the
+# base axis with a ruler and correct these to the real spots.
+marks_mm: [[220, 100], [220, -100], [120, -100], [120, 100]]
+
+block:
+  # OpenCV HSV: H 0-179, S and V 0-255. Default = a saturated RED block (red wraps round H=0,
+  # so two ranges). Set from a photo with tools/table_calibrate.py --pick-colour (later).
+  hsv_ranges:
+    - [[0, 120, 80], [10, 255, 255]]
+    - [[170, 120, 80], [179, 255, 255]]
+  min_area_px: 250          # smaller blobs are noise
+  size_mm: 30               # cube edge, for grasp height
+
+select:
+  radius_px: 60             # fingertip must be within this of a block's centre (image pixels)
+  hold_s: 0.5               # ...for this long (hold-to-confirm, like the gestures)
+
+safety:
+  margin_px: 40             # the "table area" = the 4 calibration marks' outline grown by this
+  clear_s: 0.5              # your hand must be out of that area this long before the arm starts
+
+pick:                       # all mm in the arm frame (x forward, y to the arm's left, z up)
+  pitch_deg: -90
+  approach_z: 80            # hover above the block before going down
+  grasp_z: 15               # fingertips at half the 30 mm block
+  lift_z: 100
+  drop_xy: [160, 110]       # fixed drop zone, arm's left side (change to the real spot)
+  drop_z: 40
+  open_mm: null             # null = gripper open_mm from arm.yaml
+  close_mm: null            # null = gripper closed_mm (it stalls on the block before that)
+  dwell_s: 0.4              # pause after each step (gripper squeeze, settle)
