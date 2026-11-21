@@ -35,7 +35,10 @@ class GestureConfig:
 
 
 def load_gesture_config(path: Path | str = DEFAULT_PATH) -> GestureConfig:
-    return GestureConfig(**yaml.safe_load(Path(path).read_text(encoding="utf-8")))
+    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    for k in ("mapping", "modes"):    # sections read by arm/mapping and arm/modes
+        raw.pop(k, None)
+    return GestureConfig(**raw)
 
 
 def _d(a, b) -> float:

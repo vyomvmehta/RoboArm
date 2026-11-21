@@ -19,6 +19,10 @@ the web page's side/top views as the simulator.
 Status: ☐ todo · ◐ in progress · ☑ done. Owner "Claude" = boilerplate Claude writes, Vyom reviews.
 **Split (Nov 20):** Ishaan takes the lighter half: the filter (V2-4) and depth calibration (V2-6), both core learning pieces (he writes them, Claude gives hints only). Vyom takes the critical path: mapping (V2-5), modes (V2-7), page + server (V2-8). Checkers swap: Vyom checks Ishaan's, Ishaan checks Vyom's.
 
+**V2-5 (Nov 20):** built, Option A + a smaller work box (`config/gestures.yaml` `mapping`), 11 tests on the real clips; live viewer shows the target. Awaiting Vyom's review.
+
+**V2-7 (Nov 20):** built (`arm/modes/`). Modes picked with page buttons: off / command / follow / record / replay / point. Inside the hand modes the only gesture is the EXIT: an open palm held STILL for 2 s (a moving open hand keeps following). Dead-man hold, refusals held, record → `config/recordings.yaml`, thumbs-up replays, point-to-pick wired end to end. 13 tests. Awaiting Vyom's review.
+
 **Interfaces agreed up front so nobody waits:** filter `f = OneEuro(cfg); xyz = f(t, xyz)` (mapping passes values straight through until it exists); depth `palm_px -> distance_cm` (mapping uses a fixed z until it exists).
 
 ## Setup (each laptop, once)
@@ -42,11 +46,13 @@ MediaPipe 1.x only has the Tasks API (`mp.solutions` is gone), which needs that 
 | V2-2 | **`arm/gestures/`**: pinch distance normalised by palm size; fist / open palm / thumbs-up classifier; **hold-to-confirm** (a gesture must hold ~0.5 s before it counts). Thresholds in `config/gestures.yaml`. Tests on recorded clips. | Claude | 1.5 h | V2-1 | ☑ |
 | V2-3 | **Record test clips**: 20–30 s each of pinch open/close, fist, palm, thumbs-up, slow and fast hand sweeps, hand leaving the frame. These become the test fixtures. | Vyom | 20 min | V2-1 | ☑ |
 | V2-4 | **Smoothing filter** (core learning piece): EMA first, then a **One Euro filter**; measure jitter vs lag on the recorded clips and pick parameters. | **Ishaan** (hints) | 1.5 h | V2-3 | ☐ |
-| V2-5 | **`arm/mapping/`**: hand position → gripper target (x, y, z mm) in a box inside the workspace; clamp to the workspace; pinch → gripper mm; fixed pitch −90 for picking. | Vyom (+ Claude) | 1 h | V2-2 | ☐ |
+| V2-5 | **`arm/mapping/`**: hand position → gripper target (x, y, z mm) in a box inside the workspace; clamp to the workspace; pinch → gripper mm; fixed pitch −90 for picking. | Vyom (+ Claude) | 1 h | V2-2 | ◐ |
 | V2-6 | **Depth from palm size** (core learning piece, calibration maths): hold the hand at 3–4 known distances, fit z vs apparent palm size, store in `gestures.yaml`. | **Ishaan** (hints) | 45 min | V2-1 | ☐ |
-| V2-7 | **`arm/modes/`**: state machine mimic / command / record / replay. **Dead-man rule:** hand lost → hold (no new goals). Fist → home, palm held → hold, thumbs-up → replay last recording. Mode switch only on a confirmed gesture. | Vyom (+ Claude) | 1.5 h | V2-2, V2-5 | ☐ |
+| V2-7 | **`arm/modes/`**: state machine mimic / command / record / replay. **Dead-man rule:** hand lost → hold (no new goals). Fist → home, palm held → hold, thumbs-up → replay last recording. Mode switch only on a confirmed gesture. | Vyom (+ Claude) | 1.5 h | V2-2, V2-5 | ◐ |
 | V2-8 | **Server + page**: a "Gesture" panel (camera preview, mode, gesture seen, target), start/stop gesture control. Gestures drive `set_target` at ≤ 30 Hz; the page's Disarm / Stop now still win. Record → saves a sequence into the demo pose store (reuses `arm/demo.py`). | Vyom (+ Claude) | 1.5 h | V2-7 | ☐ |
 | V2-9 | **Fake-arm run**: hand drives the simulated arm on the page; log targets + timing to CSV; check the hand-lost hold and every refusal (out of reach, base clearance) on screen. | Vyom + Claude | 45 min | V2-8 | ☐ |
+
+| V2-16 | **Point to pick** (`arm/pick/`, `config/pick.yaml`): front camera sees table + arm + block + you. Table calibration (4 taped marks → homography, `tools/table_calibrate.py`), red-block detection (HSV), hold the index fingertip on a block 0.5 s to select it, **hand-clear gate** (arm starts only once your hand has left the table area for 0.5 s, stops at once if it comes back), 9-step pick (above → down → grab → lift → drop zone → release → home), every pose IK + clearance-checked before moving. Separate **Point to pick** button next to **Follow** on the page (V2-8). Hardware-free parts built Nov 20 (13 tests); needs real-table photos to tune colour + the 4 marks taped. | Vyom (+ Claude) | 4–6 h | V2-8, V1 | ◐ |
 
 ## Phase B: on the real arm (Sun, only after V1 passes)
 

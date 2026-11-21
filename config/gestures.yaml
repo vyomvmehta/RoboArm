@@ -16,3 +16,40 @@ pinch_open_ratio: 1.00        # at or above this = fully open (in between maps l
 
 hold_to_confirm_s: 0.5        # a command gesture must be held this long before it counts
 min_visible_fraction: 0.8     # ...and seen in at least this share of the frames in that window
+
+# ---------------------------------------------------------------- V2-5 mapping (arm/mapping)
+# Hand position -> gripper target. Option A (Nov 20, Vyom): image left/right -> arm left/right,
+# image up/down -> arm height, hand toward/away from the camera (palm size) -> arm reach.
+# Option B: image up/down -> reach instead, height fixed (works without V2-6 depth).
+mapping:
+  axes: A                     # A or B
+  mirror: true                # true = you FACE the arm (camera beside it, looking at you): the gripper
+                              # follows your hand like a mirror image. false = you stand BEHIND the arm.
+  hand_box: [0.20, 0.80, 0.15, 0.85]   # [u_min, u_max, v_min, v_max] of the image (0..1) that counts;
+                                       # edges are left out because tracking is shaky there
+  # SMALLER work box around the pick area (Vyom, Nov 20) instead of the whole ring: finer control.
+  # Robot frame: x forward from the base, y to the arm's LEFT, z up from the table (mm).
+  # Shrink/shift it onto the real pick + place spots once they are fixed on the table.
+  work_box:
+    x: [150, 200]             # reach
+    y: [-80, 80]              # left/right
+    z: [30, 120]              # height above the table
+  pitch_deg: -90              # gripper pointing straight down for picking
+  fixed_reach_mm: 175         # option A, until V2-6 depth exists: reach stays here
+  fixed_z_mm: 60              # option B only: height stays here
+  depth_cm: [40, 80]          # option A with depth: hand this close -> far reach, this far -> near reach
+                              # (pushing your hand toward the camera pushes the arm out)
+
+# ---------------------------------------------------------------- V2-7 modes (arm/modes)
+# Modes are chosen with page buttons (Vyom, Nov 20). The ONE gesture that works inside the
+# hand-driven modes (follow, record, point, replay) is the EXIT: an open palm held exit_hold_s
+# -> back to command mode, arm holds. Longer than the 0.5 s command hold because a palm also
+# shows up in normal hand movement. Inside follow, every other gesture is ignored (a pinching
+# hand sometimes reads as fist: it must not send the arm home).
+modes:
+  exit_hold_s: 2.0       # Vyom, Nov 20: 2 s (was 1 s) so a passing open palm never exits
+  exit_still: 0.25        # ...and HELD STILL: palm centre moves less than this x palm size over those
+                          # 2 s. A relaxed open hand is normal while following; moving it must not exit.
+  follow_hz: 30           # at most this many new goals per second
+  deadband_mm: 2.0        # ignore target changes smaller than this (tracking jitter)
+  record_every_s: 0.3     # record mode stores a pose this often (and on every gripper change)

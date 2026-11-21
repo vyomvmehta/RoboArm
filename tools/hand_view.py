@@ -1,4 +1,4 @@
-"""Live hand viewer + clip recorder (V2-1 / V2-3).
+r"""Live hand viewer + clip recorder (V2-1 / V2-3).
 
     .venv\\Scripts\\python tools\\hand_view.py            (camera 0)
     .venv\\Scripts\\python tools\\hand_view.py --camera 1
@@ -22,7 +22,9 @@ from pathlib import Path
 import cv2
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from arm.config import load_arm  # noqa: E402
 from arm.gestures import Confirmer, classify, load_gesture_config, pinch_fraction  # noqa: E402
+from arm.mapping import HandMapper  # noqa: E402
 from arm.vision.hands import Camera, HandTracker, save_csv  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[1] / "runs" / "hands"
@@ -40,6 +42,7 @@ def main():
     cfg = load_gesture_config()
     cam, tracker = Camera(args.camera), HandTracker()
     conf = Confirmer(cfg.hold_to_confirm_s, cfg.min_visible_fraction)
+    mapper = HandMapper(load_arm())      # V2-5: where the gripper would go (nothing is sent)
     t0 = time.perf_counter()
     rec, rec_name, last_fired, fired_at = None, "", "", 0.0
     fps, last = 0.0, t0
@@ -71,12 +74,22 @@ def main():
                 f"CONFIRMED: {last_fired}" if now - fired_at < 1.5 else "CONFIRMED: -",
             ]
             if fr.visible:
-                lines += [f"pinch {pinch_fraction(fr.landmarks, cfg):.2f}   palm {fr.palm_size():.0f} px"]
+                pinch = pinch_fraction(fr.landmarks, cfg)
+                lines += [f"pinch {pinch:.2f}   palm {fr.palm_size():.0f} px"]
+                t = mapper.map(fr, pinch)
+                lines += [f"target x{t.x:.0f} y{t.y:+.0f} z{t.z:.0f} grip {t.gripper_mm:.0f} mm"
+                          + ("  (edge)" if t.clamped else "")]
+                if t.refused:
+                    lines += [f"REFUSED: {t.refused[:60]}"]
+                # the hand box: only this part of the image counts
+                u0, u1, v0, v1 = mapper.cfg["hand_box"]
+                hh, ww = view.shape[:2]
+                cv2.rectangle(view, (int(ww * u0), int(hh * v0)), (int(ww * u1), int(hh * v1)), (200, 160, 60), 1)
             if rec is not None:
                 lines += [f"REC {rec_name}  {len(rec)} frames  (r to stop)"]
             for i, s in enumerate(lines):
                 cv2.putText(view, s, (12, 30 + 28 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
-                            (0, 0, 255) if s.startswith("REC") else (255, 255, 255), 2)
+                            (0, 0, 255) if s.startswith(("REC", "REFUSED")) else (255, 255, 255), 2)
             cv2.imshow("RoboArm hand view (q quits)", view)
 
             key = cv2.waitKey(1) & 0xFF
