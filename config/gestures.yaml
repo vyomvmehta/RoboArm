@@ -30,10 +30,14 @@ mapping:
   # SMALLER work box around the pick area (Vyom, Nov 20) instead of the whole ring: finer control.
   # Robot frame: x forward from the base, y to the arm's LEFT, z up from the table (mm).
   # Shrink/shift it onto the real pick + place spots once they are fixed on the table.
+  # The WHOLE box must be reachable at pitch_deg: HandMapper checks it through point_to_joints
+  # (IK + joint limits + base clearance) at start-up and refuses to run otherwise.
   work_box:
-    x: [150, 200]             # reach
+    x: [150, 180]             # reach. Was 200: the far corners (x >= 182 with |y| = 80, z = 120) are
+                              # refused (theta3 past -110, then wrist out of reach; > 210 from the axis)
     y: [-80, 80]              # left/right
     z: [30, 120]              # height above the table
+  box_check_mm: 10            # grid spacing for that start-up reachability check (faces + corners always)
   pitch_deg: -90              # gripper pointing straight down for picking
   fixed_reach_mm: 175         # option A, until V2-6 depth exists: reach stays here
   fixed_z_mm: 60              # option B only: height stays here
