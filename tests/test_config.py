@@ -20,12 +20,13 @@ def test_arm_yaml_loads_and_home_is_reachable(cfg):
 
 
 def test_pick_zone_is_reachable_pointing_down(cfg):
-    # The demo picks a 30 mm block (grasp ~15 mm up) anywhere in the workspace ring, straight down.
+    # The demo picks a 30 mm block anywhere in the workspace ring, straight down. The grasp point
+    # is the middle of the finger pads, so it sits at z_min (fingertips 5 mm above the table, D21).
     ws = cfg.workspace
     for r in range(ws["r_min"], ws["r_max"] + 1, 10):
         for deg_yaw in (-60, 0, 60):
             yaw = math.radians(deg_yaw)
-            ik(cfg.geometry, r * math.cos(yaw), r * math.sin(yaw), 15, -math.pi / 2, limits=cfg.limits)
+            ik(cfg.geometry, r * math.cos(yaw), r * math.sin(yaw), ws["z_min"], -math.pi / 2, limits=cfg.limits)
 
 
 def test_beyond_full_reach_is_rejected(cfg):

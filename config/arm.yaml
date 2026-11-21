@@ -8,12 +8,12 @@
 #   theta3 = wrist bend relative to the forearm, pitch = theta1 + theta2 + theta3 (-90 = pointing down).
 # Joint angle -> servo pulse lives in config/calibration.yaml (Ishaan), not here.
 
-links:  # D14 ON HOLD (Nov 5): 11 / 10 / 7 cm until the servo torque test; may grow (four-bar or stronger servo)
-  l1: 110               # shoulder axis -> elbow axis
-  l2: 100               # elbow axis -> wrist axis
-  l3: 70                # wrist axis -> grasp point between the jaws
-  shoulder_height: 90   # shoulder axis above the table. Estimate: base enclosure + turntable + shoulder bracket
-  shoulder_offset: 15   # shoulder axis forward of the base axis. Estimate
+links:  # D14 (Nov 9): four-bar, l1 13 / l2 12 cm; l3 8.4 cm since D21 (Nov 15). Torque re-checked with SolidWorks masses: TORQUE.md "Human arm (D21)"
+  l1: 130               # shoulder axis -> elbow axis
+  l2: 120               # elbow axis -> wrist axis
+  l3: 84                # wrist axis -> grasp point: bracket 20 + gripper 19 + 45 to the middle of the flat jaw pads (D21, Nov 15)
+  shoulder_height: 174.5  # Siddharth's base (Nov 16 review): plate 6 + wheel gap 4.5 + box 70 (measured in Enclosure.SLDPRT) + tray 40 + lid 4, + 50 to the bracket's axis. Re-measure on the printed base
+  shoulder_offset: 0    # shoulder bracket is centred on the turntable axis (Nov 10)
 
 four_bar:  # D19: parallelogram elbow drive. Crank on the elbow servo = lever behind the elbow
   crank_mm: 30          # (30, not 25: at 25 the pin hole sat 1.5 mm from the horn screw). Used by the site's drawing.
@@ -30,14 +30,16 @@ joints:
     limits: [-20, 140]
   j2_elbow:
     window: [-160, 20]    # elbow-up poses only use the negative side
-    limits: [-145, 0]     # -145: forearm folded nearly onto the upper arm (check in CAD for collision)
+    limits: [-135, -8]    # -140 lets the gripper cover hit the shoulder bracket (CAD check, Nov 16, D21); closest pick needs ~-133.
+                          # Upper end -8, not 0: at theta2 = 0 the four-bar O-E-L-C goes collinear (dead point), the crank
+                          # loses its moment arm and the linkage can flip, breaking forearm = theta1 + theta2 (PR #14 review, Ishaan).
   j3_wrist:
     window: [-120, 60]    # picking straight down needs about -85..+10 (workspace check, 2026-11-04)
-    limits: [-110, 50]
+    limits: [-90, 50]     # Arm Human (adopted Nov 17, D21): -90, its skins + cuff are checked to -90 (plain arm: -95, D19)
 
 gripper:  # J4. Opening in mm is mapped to pulses in calibration.yaml once the gripper exists
-  open_mm: 40            # fully open = fingers flared 15 deg outward (rest)
-  closed_mm: 26          # curled fingertips (D17, Nov 12): below 26 the tips pass < 6 mm apart; racks stop here
+  open_mm: 40            # fully open (rest); flat parallel jaws (D21, Nov 15)
+  closed_mm: 2           # flat jaws (D21): the rack slot stops them 2 mm apart
 
 speed_limits_deg_per_s:  # start low (CLAUDE.md section 12); widen once the arm is proven
   j0_base: 45
@@ -45,7 +47,7 @@ speed_limits_deg_per_s:  # start low (CLAUDE.md section 12); widen once the arm 
   j2_elbow: 45
   j3_wrist: 90
   j4_gripper: 90
-gripper_speed_mm_per_s: 20  # the laptop ramp works in mm for the gripper (26-40 mm in ~0.7 s)
+gripper_speed_mm_per_s: 20  # the laptop ramp works in mm for the gripper (2-40 mm in ~1.9 s)
 
 poses:
   # Ready pose above the middle of the pick zone, gripper pointing down. Given as a target
@@ -57,9 +59,9 @@ poses:
   park: {theta0: 0, theta1: 90, theta2: -130, theta3: -20}
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
-  r_min: 90             # closer than this, the gripper meets the base (base radius ~60 mm, estimate)
-  r_max: 210            # IK reaches ~224 when picking at z = 15, but a nearly straight arm is sloppy
-  z_min: 5              # never drive the jaws into the table
+  r_min: 140            # closer: the hand hits the base's 170 mm box (front face 85 out) or its 200 mm plate (Nov 16)
+  r_max: 230            # on the 174.5 base, 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34
+  z_min: 25             # grasp point = middle of the finger pads; the longest fingertip is 20 below it (D21), so 25 keeps it 5 above the table
   z_max: 250
 
 base_clearance:  # D23 (Nov 17): poses inside the joint limits that still hit Siddharth's base (arm/clearance.py)
