@@ -1,0 +1,12 @@
+# V2 (gesture control) runs in a Python 3.12 venv: see docs/V2_TASKS.md "Setup".
+# Versions are the ones tested on Nov 20, 2026.
+mediapipe==1.2.3
+opencv-python==5.1.0
+numpy
+pyyaml
+pyserial
+fastapi
+uvicorn
+httpx
+pytest
+matplotlib
