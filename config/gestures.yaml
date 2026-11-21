@@ -79,3 +79,10 @@ filter:
     # and the clips have no fast depth motion. Re-run tools/filter_sweep.py after both.
     x: {min_cutoff_hz: 0.1, beta: 0.001}
   ema_alpha: {x: 0.05, y: 0.3, z: 0.3}     # baseline only (logs / comparison), not used by the arm
+
+# ---------------------------------------------------------------- V2-6 depth (arm/vision/depth.py)
+# WRITTEN BY tools/depth_calibrate.py: from the line above to the next '# ----' section
+# header (or the end of the file) is replaced on every calibration. Don't hand-edit it.
+# Not calibrated yet: depth: null -> load_depth() returns None (logged once at start-up) and the
+# mapper keeps reach at mapping.fixed_reach_mm. Calibrate on the DEMO camera to fill this in.
+depth: null
