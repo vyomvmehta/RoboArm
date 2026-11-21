@@ -53,3 +53,10 @@ modes:
   follow_hz: 30           # at most this many new goals per second
   deadband_mm: 2.0        # ignore target changes smaller than this (tracking jitter)
   record_every_s: 0.3     # record mode stores a pose this often (and on every gripper change)
+
+# ---------------------------------------------------------------- V2-6 depth (arm/vision/depth.py)
+# WRITTEN BY tools/depth_calibrate.py: from the line above to the next '# ----' section
+# header (or the end of the file) is replaced on every calibration. Don't hand-edit it.
+# Not calibrated yet: depth: null -> load_depth() returns None (logged once at start-up) and the
+# mapper keeps reach at mapping.fixed_reach_mm. Calibrate on the DEMO camera to fill this in.
+depth: null
