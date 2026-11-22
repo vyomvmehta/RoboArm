@@ -26,7 +26,7 @@ center_us: 1475   # every servo's measured mid-travel; a joint may override it b
 
 joints:
   j0_base:     {center_us: 1475, direction: 1,  us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R
-  j1_shoulder: {center_us: 1817, direction: -1, us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R. Nov 22: horn ~2 teeth off (1475 us = vertical); centre = 1475 + 30 x 11.39
+    j1_shoulder: {center_us: 1817, direction: -1, us_per_deg: 11.3889, min_us: 500, max_us: 2450}  # MG996R. Nov 22: horn ~2 teeth off (1475 us = vertical); centre = 1475 + 30 x 11.39
   j2_elbow:    {center_us: 1475, direction: -1, us_per_deg: 11.3889, min_us: 500, max_us: 2450,  # MG996R
                 four_bar_window: [-100, 80]}
   # FOUR-BAR (D19, Nov 15): the elbow servo sits at the shoulder and, through the parallel rod,
