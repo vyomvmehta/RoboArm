@@ -36,7 +36,7 @@ class GestureConfig:
 
 def load_gesture_config(path: Path | str = DEFAULT_PATH) -> GestureConfig:
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    for k in ("mapping", "modes"):    # sections read by arm/mapping and arm/modes
+    for k in ("mapping", "modes", "depth", "filter"):   # sections read by arm/mapping, arm/modes, arm/vision/depth, arm/filtering
         raw.pop(k, None)
     return GestureConfig(**raw)
 

@@ -53,3 +53,25 @@ modes:
   follow_hz: 30           # at most this many new goals per second
   deadband_mm: 2.0        # ignore target changes smaller than this (tracking jitter)
   record_every_s: 0.3     # record mode stores a pose this often (and on every gripper change)
+
+# ---------------------------------------------------------------- V2-4 filter (arm/filtering)
+# Smooths the target HandMapper computes (mm, before clamping): f = OneEuro(cfg); x, y, z = f(t, xyz).
+# Axes are HandMapper's TUPLE positions. Option A: x = reach (from palm size, V2-6 depth: by far the
+# noisiest), y = left/right (image u), z = height (image v). So x gets its own, heavier settings.
+# One Euro: cutoff = min_cutoff_hz + beta * |speed mm/s|. min_cutoff sets jitter when the hand is
+# still; beta sets lag when it moves fast. Numbers from tools/filter_sweep.py on runs/hands/.
+filter:
+  reset_after_s: 0.2        # hand lost longer than this -> restart from the new position (no glide).
+                            # Clips: flickers 0.11-0.13 s (keep going), real losses 0.23-0.83 s (restart)
+  d_cutoff_hz: 1.0          # smoothing of the speed estimate that drives the cutoff (Casiez default)
+  one_euro:
+    # Image axes, Nov 21 sweep (23 still chunks, 772 slow + 50 fast samples): raw still hand 2.16 mm
+    # peak-to-peak (p95) -> 1.47 mm, under modes.deadband_mm; lag 34 ms slow / 16 ms fast.
+    # EMA at the same stillness (alpha 0.3, 1.52 mm) lags 74 / 70 ms.
+    y: {min_cutoff_hz: 1.0, beta: 0.05}
+    z: {min_cutoff_hz: 1.0, beta: 0.05}
+    # Reach (depth): raw still hand 10.4 mm p-p -> 3.3 mm; slow lag 186 ms. EMA at that stillness
+    # (alpha 0.05, 3.0 mm) lags 348 ms. PROVISIONAL: palm size -> distance is a stand-in until V2-6,
+    # and the clips have no fast depth motion. Re-run tools/filter_sweep.py after both.
+    x: {min_cutoff_hz: 0.1, beta: 0.001}
+  ema_alpha: {x: 0.05, y: 0.3, z: 0.3}     # baseline only (logs / comparison), not used by the arm
