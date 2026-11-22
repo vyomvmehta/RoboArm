@@ -74,8 +74,12 @@ filter:
     # EMA at the same stillness (alpha 0.3, 1.52 mm) lags 74 / 70 ms.
     y: {min_cutoff_hz: 1.0, beta: 0.05}
     z: {min_cutoff_hz: 1.0, beta: 0.05}
-    # Reach (depth): raw still hand 10.4 mm p-p -> 3.3 mm; slow lag 186 ms. EMA at that stillness
-    # (alpha 0.05, 3.0 mm) lags 348 ms. PROVISIONAL: palm size -> distance is a stand-in until V2-6,
-    # and the clips have no fast depth motion. Re-run tools/filter_sweep.py after both.
-    x: {min_cutoff_hz: 0.1, beta: 0.001}
+    # Reach (depth), re-tuned Nov 21 for work_box.x [150, 180] (was tuned on 200: beta is per mm/s, and
+    # the 30 mm box shrinks reach speeds x0.6, so 0.1/0.001 lagged 354-376 ms). 23 still chunks, 549
+    # slow samples, all 6 clips: raw still hand 6.25 mm p-p (p95) -> 2.28 mm, sigma of frame deltas
+    # 0.929 -> 0.220 mm; slow lag 186 ms (154 on the test's 4 clips). Fast lag: not measurable, no reach
+    # samples >= 200 mm/s. ABOVE modes.deadband_mm: small reach twitches pass on a still hand.
+    # PROVISIONAL: palm size -> distance is a stand-in (10800 / palm_px) until V2-6 is calibrated;
+    # re-tune then (tools/filter_sweep.py). No live effect yet: reach stays at fixed_reach_mm.
+    x: {min_cutoff_hz: 0.15, beta: 0.0018}
   ema_alpha: {x: 0.05, y: 0.3, z: 0.3}     # baseline only (logs / comparison), not used by the arm
