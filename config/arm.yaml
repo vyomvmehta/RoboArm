@@ -27,7 +27,7 @@ joints:
     limits: [-85, 85]
   j1_shoulder:
     window: [-30, 150]    # picks on the table use about 0..65; above 90 the arm leans back
-    limits: [-20, 140]
+    limits: [5, 140]
   j2_elbow:
     window: [-160, 20]    # elbow-up poses only use the negative side
     limits: [-135, -8]    # -140 lets the gripper cover hit the shoulder bracket (CAD check, Nov 16, D21); closest pick needs ~-133.
@@ -60,7 +60,7 @@ poses:
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
   r_min: 140            # closer: the hand hits the base's 170 mm box (front face 85 out) or its 200 mm plate (Nov 16)
-  r_max: 230            # on the 174.5 base, 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34
+  r_max: 220            # on the 174.5 base, 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34
   z_min: 25             # grasp point = middle of the finger pads; the longest fingertip is 20 below it (D21), so 25 keeps it 5 above the table
   z_max: 250
 
