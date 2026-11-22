@@ -55,7 +55,10 @@ modes:
   exit_still: 0.25        # ...and HELD STILL: palm centre moves less than this x palm size over those
                           # 2 s. A relaxed open hand is normal while following; moving it must not exit.
   follow_hz: 30           # at most this many new goals per second
-  deadband_mm: 2.0        # ignore target changes smaller than this (tracking jitter)
+  deadband_mm: 2.0        # left/right + height: ignore target changes smaller than this (tracking jitter)
+  deadband_reach_mm: 2.5  # reach has its own, wider band (Vyom, Nov 21): filtered still-hand reach wobble is
+                          # 2.31 mm p95 after #28's re-tune, over 2.0. PROVISIONAL: stand-in depth; re-check
+                          # after the demo-camera depth calibration.
   record_every_s: 0.3     # record mode stores a pose this often (and on every gripper change)
 
 # ---------------------------------------------------------------- V2-4 filter (arm/filtering)

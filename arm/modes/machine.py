@@ -192,8 +192,7 @@ class ModeMachine:
         xyz = (t.x, t.y, t.z, t.gripper_mm)
         if frame.t - self._last_sent_t < 1.0 / self.mcfg["follow_hz"]:
             return
-        if self._last_xyz and math.dist(xyz[:3], self._last_xyz[:3]) < self.mcfg["deadband_mm"] \
-                and abs(xyz[3] - self._last_xyz[3]) < 0.5:
+        if self._last_xyz and self._within_deadband(xyz, self._last_xyz):
             return                                       # jitter only: don't wake the ramp
         why = self.c.set_target(t.pose())
         if why:
@@ -246,6 +245,18 @@ class ModeMachine:
         return why
 
     # ------------------------------------------------------------------ helpers
+    def _within_deadband(self, new, old) -> bool:
+        """True when the change is only tracking jitter.
+
+        Reach (x, from palm size) is far noisier than left/right and height (from the image), so it
+        has its own, wider band (Nov 21: filtered still-hand reach 2.31 mm p95 vs 1.47 for y/z).
+        One shared band would either let reach twitches through or dull the y/z response.
+        """
+        reach_band = self.mcfg.get("deadband_reach_mm", self.mcfg["deadband_mm"])
+        return (abs(new[0] - old[0]) < reach_band
+                and math.dist(new[1:3], old[1:3]) < self.mcfg["deadband_mm"]
+                and abs(new[3] - old[3]) < 0.5)
+
     def _still_palm(self, frame: HandFrame, label) -> bool:
         """Open palm AND held still (exit gesture). A moving open hand is just following."""
         if label != "palm":

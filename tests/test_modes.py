@@ -255,3 +255,17 @@ def test_point_selects_waits_for_the_hand_to_leave_then_picks(tmp_path):
     assert selected and abs(selected[0] - 165) < 5
     assert goal_pointing == park                                 # nothing moved while the hand was on the table
     assert why is None                                           # full pick completed
+
+
+# ------------------------------------------------------------------ deadband (Nov 21)
+def test_reach_has_its_own_wider_deadband(tmp_path):
+    async def go():
+        c, m = await machine(tmp_path)
+        await c.disarm(park_first=False)
+        return m
+    m = run(go())
+    base = (175.0, 0.0, 60.0, 30.0)
+    assert m._within_deadband((175.0 + 2.3, 0.0, 60.0, 30.0), base)        # reach twitch (2.3 mm): ignored
+    assert not m._within_deadband((175.0 + 2.6, 0.0, 60.0, 30.0), base)    # past 2.5: sent
+    assert not m._within_deadband((175.0, 2.3, 60.0, 30.0), base)          # same 2.3 mm sideways: sent (2.0 band)
+    assert not m._within_deadband((175.0, 0.0, 60.0, 31.0), base)          # gripper change: sent
