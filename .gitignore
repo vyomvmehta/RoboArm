@@ -30,3 +30,6 @@ desktop.ini
 # JS deps: never commit these. A git add -A with site/ on disk pushes 140 MB and
 # GitHub rejects the whole push (hit 2026-11-18).
 node_modules/
+
+# MediaPipe model files: downloaded by docs/V2_TASKS.md V2-0, not committed (8 MB)
+models/*.task
