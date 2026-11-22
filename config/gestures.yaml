@@ -1,0 +1,91 @@
+# V2 gesture thresholds (arm/gestures). Every ratio is divided by the palm size (wrist -> middle
+# knuckle), so the same numbers work near and far from the camera.
+# Nov 20: thumb ratio + palm rule tuned on Vyom's clips (runs/hands/); the rest are still
+# STARTING VALUES (from hand geometry): tune them on the recorded
+# clips (docs/V2_TASKS.md V2-3) and write down what changed and why.
+
+finger_extended_ratio: 1.15   # finger counts as straight if |wrist->tip| > this x |wrist->PIP|
+                              # (straight ~1.35, curled into the palm < 1.0)
+thumb_extended_ratio: 0.60    # thumb counts as out if |thumb tip -> index knuckle| > this x palm.
+                              # Nov 20 clips (5th-95th pct): fist 0.23-0.51, thumbs-up 0.67-1.51
+                              # -> 0.60 sits in the gap. (Was 0.75: open palms never counted.)
+thumbs_up_rise: 0.40          # thumbs-up also needs the thumb tip this x palm ABOVE its knuckle
+
+pinch_closed_ratio: 0.30      # |thumb tip -> index tip| / palm at or below this = fully closed
+pinch_open_ratio: 1.00        # at or above this = fully open (in between maps linearly)
+
+hold_to_confirm_s: 0.5        # a command gesture must be held this long before it counts
+min_visible_fraction: 0.8     # ...and seen in at least this share of the frames in that window
+
+# ---------------------------------------------------------------- V2-5 mapping (arm/mapping)
+# Hand position -> gripper target. Option A (Nov 20, Vyom): image left/right -> arm left/right,
+# image up/down -> arm height, hand toward/away from the camera (palm size) -> arm reach.
+# Option B: image up/down -> reach instead, height fixed (works without V2-6 depth).
+mapping:
+  axes: A                     # A or B
+  mirror: true                # true = you FACE the arm (camera beside it, looking at you): the gripper
+                              # follows your hand like a mirror image. false = you stand BEHIND the arm.
+  hand_box: [0.20, 0.80, 0.15, 0.85]   # [u_min, u_max, v_min, v_max] of the image (0..1) that counts;
+                                       # edges are left out because tracking is shaky there
+  # SMALLER work box around the pick area (Vyom, Nov 20) instead of the whole ring: finer control.
+  # Robot frame: x forward from the base, y to the arm's LEFT, z up from the table (mm).
+  # Shrink/shift it onto the real pick + place spots once they are fixed on the table.
+  # The WHOLE box must be reachable at pitch_deg: HandMapper checks it through point_to_joints
+  # (IK + joint limits + base clearance) at start-up and refuses to run otherwise.
+  work_box:
+    x: [150, 180]             # reach. Was 200: the far corners (x >= 182 with |y| = 80, z = 120) are
+                              # refused (theta3 past -110, then wrist out of reach; > 210 from the axis)
+    y: [-80, 80]              # left/right
+    z: [30, 120]              # height above the table
+  box_check_mm: 10            # grid spacing for that start-up reachability check (faces + corners always)
+  pitch_deg: -90              # gripper pointing straight down for picking
+  fixed_reach_mm: 175         # option A, until V2-6 depth exists: reach stays here
+  fixed_z_mm: 60              # option B only: height stays here
+  depth_cm: [40, 80]          # option A with depth: hand this close -> far reach, this far -> near reach
+                              # (pushing your hand toward the camera pushes the arm out)
+
+# ---------------------------------------------------------------- V2-7 modes (arm/modes)
+# Modes are chosen with page buttons (Vyom, Nov 20). The ONE gesture that works inside the
+# hand-driven modes (follow, record, point, replay) is the EXIT: an open palm held exit_hold_s
+# -> back to command mode, arm holds. Longer than the 0.5 s command hold because a palm also
+# shows up in normal hand movement. Inside follow, every other gesture is ignored (a pinching
+# hand sometimes reads as fist: it must not send the arm home).
+modes:
+  exit_hold_s: 2.0       # Vyom, Nov 20: 2 s (was 1 s) so a passing open palm never exits
+  exit_still: 0.25        # ...and HELD STILL: palm centre moves less than this x palm size over those
+                          # 2 s. A relaxed open hand is normal while following; moving it must not exit.
+  follow_hz: 30           # at most this many new goals per second
+  deadband_mm: 2.0        # left/right + height: ignore target changes smaller than this (tracking jitter)
+  deadband_reach_mm: 2.5  # reach has its own, wider band (Vyom, Nov 21): filtered still-hand reach wobble is
+                          # 2.31 mm p95 after #28's re-tune, over 2.0. PROVISIONAL: stand-in depth; re-check
+                          # after the demo-camera depth calibration.
+  record_every_s: 0.3     # record mode stores a pose this often (and on every gripper change)
+
+# ---------------------------------------------------------------- V2-4 filter (arm/filtering)
+# Smooths the target HandMapper computes (mm, before clamping): f = OneEuro(cfg); x, y, z = f(t, xyz).
+# Axes are HandMapper's TUPLE positions. Option A: x = reach (from palm size, V2-6 depth: by far the
+# noisiest), y = left/right (image u), z = height (image v). So x gets its own, heavier settings.
+# One Euro: cutoff = min_cutoff_hz + beta * |speed mm/s|. min_cutoff sets jitter when the hand is
+# still; beta sets lag when it moves fast. Numbers from tools/filter_sweep.py on runs/hands/.
+filter:
+  reset_after_s: 0.2        # hand lost longer than this -> restart from the new position (no glide).
+                            # Clips: flickers 0.11-0.13 s (keep going), real losses 0.23-0.83 s (restart)
+  d_cutoff_hz: 1.0          # smoothing of the speed estimate that drives the cutoff (Casiez default)
+  one_euro:
+    # Image axes, Nov 21 sweep (23 still chunks, 772 slow + 50 fast samples): raw still hand 2.16 mm
+    # peak-to-peak (p95) -> 1.47 mm, under modes.deadband_mm; lag 34 ms slow / 16 ms fast.
+    # EMA at the same stillness (alpha 0.3, 1.52 mm) lags 74 / 70 ms.
+    y: {min_cutoff_hz: 1.0, beta: 0.05}
+    z: {min_cutoff_hz: 1.0, beta: 0.05}
+    # Reach (depth): raw still hand 10.4 mm p-p -> 3.3 mm; slow lag 186 ms. EMA at that stillness
+    # (alpha 0.05, 3.0 mm) lags 348 ms. PROVISIONAL: palm size -> distance is a stand-in until V2-6,
+    # and the clips have no fast depth motion. Re-run tools/filter_sweep.py after both.
+    x: {min_cutoff_hz: 0.1, beta: 0.001}
+  ema_alpha: {x: 0.05, y: 0.3, z: 0.3}     # baseline only (logs / comparison), not used by the arm
+
+# ---------------------------------------------------------------- V2-6 depth (arm/vision/depth.py)
+# WRITTEN BY tools/depth_calibrate.py: from the line above to the next '# ----' section
+# header (or the end of the file) is replaced on every calibration. Don't hand-edit it.
+# Not calibrated yet: depth: null -> load_depth() returns None (logged once at start-up) and the
+# mapper keeps reach at mapping.fixed_reach_mm. Calibrate on the DEMO camera to fill this in.
+depth: null
