@@ -226,7 +226,7 @@ The Prusas need SD cards we don't have, so batch B prints on the UltiMaker S5 (C
 | MG90S pocket | **+0.10** snug (+0.25 pops out) | Forearm + Gripper Body 11.9 × 22.8 → **12.0 × 22.9** |
 | 608 seat | **22.2** firm (22.0 too tight to remove, 22.4 drops out) | Upper Arm Ø22.0 → **Ø22.2** |
 | M3 nut pocket | 5.6 prints 5.6 | unchanged (5.6 AF × 4.2) |
-Arm Human rebuilt with these: 0 interferences at the 20 poses, hand clear at 2–40 mm. Print set re-exported to `STL/Arm Human/`; tight-fit plate = `Print Nov 18/UltiMaker plates/Plate 5`. Plain `Arm/` and `Gripper/` STLs in `STL/Arm (plain, not used)/` still have the old sizes. Still to check with hardware: M3 screw through holes 3.0 / 3.2 / 3.4.
+Arm Human rebuilt with these: 0 interferences at the 20 poses, hand clear at 2–40 mm. Print set re-exported to `STL/Arm Human/`; tight-fit plate = `Print Nov 18/UltiMaker plates/Plate 5`. Plain `Arm/` and `Gripper/` STLs in `STL/Arm (plain, not used)/` still have the old sizes. Hardware check (Nov 20): an M3 nut presses into the 5.6 pocket and stays (perfect); an M3 screw passes 3.2 and up and is a snug slide in 3.4, so the 3.45 clearance holes stay. (An M2 is slightly loose in 3.0.)
 
 ## D18: Shoulder bracket for the four-bar (2026-11-10, Vyom built it in SolidWorks; Siddharth checks)
 
@@ -306,3 +306,39 @@ Replaces the tilting, curled mitten fingers (D17 updates Nov 11–12). Nov 15 th
 - **Checked in SolidWorks, 20 poses:** every pick and normal pose clears the base; the shoulder caps sit flush on the lid (touching only). Three poses drive the arm into the base: shoulder 60 with the elbow at −130 / −135 (gripper into the lid and tray) and shoulder −20 with the elbow folded (forearm and hand into the tray). All are inside the joint limits, so a host-side **base-clearance rule** refuses them (separate branch, safety/base-clearance).
 - **Base fit issues found (for Siddharth, before printing the box and tray):** the tray's lip corners (R6) don't fit the box's R10 inside corners (~20 mm³ per corner, so the tray won't seat): lip corner radius ≥ 10.4. The box's corner pilot holes sit ~1 mm outside the middle of the wall (~1.25 mm skin outside an M3). Horn + servo tab height in `grap_base_pivot.py` are still guesses (planet gear, servo bridge). No STL of the box yet.
 - **Print set (Nov 18):** `SolidWorks Parts/STL/Arm Human/`, 18 files, Fine, mm: Shoulder Bracket, Shoulder Cap ×2, Upper Arm, Upper Arm Skin, Crank, Rod, Forearm, Forearm Skin, Elbow Spacer, Wrist Bracket, Wrist Cap, Wrist Cuff, Palm Cover, Gripper Body, Pinion, Rack ×2, Fingers, Thumb. ~296 g if solid (normal infill: well under the 300 g batch B budget). Bambu P2S, PLA Basic, default profile (D15). Skins, cuff and palm cover are thin curved shells: check supports in the slicer.
+
+## D24: Aluminium servo horn measured; base print set (2026-11-22, Siddharth measured, Claude applied)
+
+The planet gear's horn pocket was built from guessed numbers (`HORN_LEN 35.0, HORN_W 8.0,
+HORN_HUB_D 13.0, HORN_SCREWS [10.0, 20.0]`). Siddharth put calipers on the real horn, all
+from the hub centre: **27.5** to the end of the horn, screw holes at **20.0** and **24.5**
+(centre to centre), hub **10.5** across.
+
+The arm width falls out of those for free: the outer screw sits on the centre of the rounded
+tip, so the half-width is `27.5 - 24.5 = 3.0` and the arm is **6.0** wide. That also explains
+the "35 x 6" on the datasheet - the 6 was the width, and it had been read as the thickness.
+
+| | guessed | measured |
+|---|---|---|
+| hub pocket radius | 6.80 | **5.55** |
+| arm pocket width | 8.60 | **6.60** |
+| tip reach | 32.80 | **27.80** |
+| screw holes | 10.0, 20.0 | **20.0, 24.5** |
+
+The hub pocket was 2.5 mm oversize on diameter. The hub is where nearly all the drive torque
+crosses from horn to planet gear, so that slop would have gone straight into the box's
+rotation, and the 2.25:1 ratio (D22) multiplies it at the arm. Caught before printing.
+
+`Base/grap_base_pivot.py` here carries the measured constants; PR #10 still has the guesses,
+so expect a conflict in that one file when #10 merges - keep this version. All seven base
+parts rebuild `valid=True` and servo top 66.5 still clears the 70 box height.
+
+Print set: `Print Nov 18/UltiMaker plates/` Plate 6 (planet gear, 4 wheel forks, sun gear),
+Plate 8 (base plate), Plate 9 (lid), Plate 10 (electronics tier). 8/9/10 are each alone on a
+plate because no two of them fit side by side on the 320 mm usable bed.
+
+**Still blocked:** `servo_bridge` is on no plate. Its height rides on `SERVO_TAB_FACE` (10.5,
+a guess) and `HORN_T` (6.0, datasheet not calipers), which set where the horn meets the planet
+gear - a wrong value breaks the mesh. Two more readings close it. Related: the two bridge pilot
+holes sit ~0.5 mm inside `SLOT_R_IN` and clear the arc slots only through the angular gap;
+recheck once `SERVO_SHAFT_OFFSET` is confirmed.
