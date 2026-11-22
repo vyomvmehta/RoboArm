@@ -59,7 +59,7 @@ poses:
   park: {theta0: 0, theta1: 90, theta2: -130, theta3: -20}
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
-  r_min: 140            # closer: the hand hits the base's 170 mm box (front face 85 out) or its 200 mm plate (Nov 16)
+  r_min: 150            # Nov 22: was 140; the elbow re-calibration leaves the forearm only ~75 deg below level, and the 140-145 mm low picks need ~80. Closer: the hand hits the base's 170 mm box (front face 85 out) or its 200 mm plate (Nov 16)
   r_max: 220            # on the 174.5 base, 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34
   z_min: 25             # grasp point = middle of the finger pads; the longest fingertip is 20 below it (D21), so 25 keeps it 5 above the table
   z_max: 250
