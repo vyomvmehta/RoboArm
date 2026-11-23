@@ -3,9 +3,50 @@ Print plan. Everything goes on the UltiMaker S5 (AA 0.4, Generic PLA, 0.2 mm Fas
 already, so: open the .3mf in Cura -> Slice -> save to USB or send over the network.
 Check the preview before you print.
 
-"UltiMaker plates (open in Cura)\" holds every plate. Where a plate also has a
-"(single file, cannot overlap).stl", that is a fallback: one welded mesh, for when
-Cura re-centres the 3MF's separate objects on top of each other.
+"UltiMaker plates (open in Cura)\" holds every plate. make_plates.py builds the arm
+plates and pack_plates.py builds the packed base plates, both from ..\STL\ - run either
+with plain python, no cadquery needed, and they rewrite the .3mf/.stl in place.
+
+Where a plate also has a ".stl" beside its ".3mf", that is a fallback: one welded mesh
+with the parts already arranged, for when Cura re-centres the 3MF's separate objects on
+top of each other.
+
+
+WHAT IS LEFT TO PRINT - PICK ONE OF THE TWO PLANS BELOW, NOT BOTH
+=================================================================
+Twelve parts are unprinted: base plate, lid, servo bridge, planet gear, sun gear,
+4 wheel forks, 3 elbow spacers. 407 cm3 of plastic either way.
+
+PLAN A - two plates (packed, fewest jobs).  Built by pack_plates.py in this folder.
+  Plate 11  base plate + servo bridge + planet gear + 1 fork + 3 spacers
+            305 x 200 mm, 275 cm3, tallest part 34.5 mm
+  Plate 12  lid + 3 forks + sun gear
+            170 x 220 mm, 132 cm3, tallest part 13.1 mm
+
+  Two is the minimum. The base plate is 200 x 200 and the lid is 170 x 170, and they
+  cannot share a 320 mm bed in any orientation - placing the base leaves a widest
+  contiguous free width of 120 mm, and the lid needs 170. So one of them starts a
+  second plate no matter how the rest is arranged.
+
+  The cost of Plan A: the base plate is the most warp-prone part we have and the most
+  expensive to redo, and on Plate 11 it shares a job with six other parts. If a corner
+  lifts and the nozzle catches it, all seven are lost. The 3 elbow spacers are also
+  only 1.5 mm tall, so they finish in ten layers and then sit under 160 more layers of
+  nozzle travel.
+
+PLAN B - four plates (base plate isolated, safer).  Plates 6 to 9, already here.
+  Plate 6   mechanism + bridge      Planet gear, Servo bridge, 4 Wheel forks, Sun gear
+  Plate 7   elbow spacer x3
+  Plate 8   base plate              alone
+  Plate 9   lid                     alone
+
+Plan A halves the jobs; Plan B isolates the one part worth protecting. Do not print
+plates from both plans - you would make every part twice.
+
+Orientations are the same in both plans and come from measured flat-face area, not
+assumption: lid, servo bridge, wheel forks and sun gear are all FLIPPED; base plate and
+planet gear go as-is. The wheel forks matter most - the wrong way up they have 0.01 cm2
+of flat face on the bed against 3.15 cm2 flipped.
 
 
 ARM (Arm Human + flat-finger gripper) - all printed
@@ -16,7 +57,8 @@ ARM (Arm Human + flat-finger gripper) - all printed
   Plate 5   tight fits              the parts resized by plate 1's measurements (see D17)
   Plate A   plates 2 + 3 combined
 
-  Plate 7   elbow spacer x3         REPRINT - the one from Plate 2/A went missing. Tiny ring
+  Plate 7   elbow spacer x3         REPRINT (Plan B only - Plan A puts these on Plate 11).
+                                    The one from Plate 2/A went missing. Tiny ring
                                     (OD 11.0, bore 8.4, 1.5 tall) under the M8 elbow bolt;
                                     it presses on the 608's inner race only. The arm needs one.
 
