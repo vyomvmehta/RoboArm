@@ -12,41 +12,46 @@ with the parts already arranged, for when Cura re-centres the 3MF's separate obj
 top of each other.
 
 
-WHAT IS LEFT TO PRINT - PICK ONE OF THE TWO PLANS BELOW, NOT BOTH
-=================================================================
-Twelve parts are unprinted: base plate, lid, servo bridge, planet gear, sun gear,
-4 wheel forks, 3 elbow spacers. 407 cm3 of plastic either way.
+WHAT IS LEFT TO PRINT - TWO PLATES
+==================================
+Twelve parts, 407 cm3 of plastic, two jobs. Print both and the base is complete.
 
-PLAN A - two plates (packed, fewest jobs).  Built by pack_plates.py in this folder.
-  Plate 11  base plate + servo bridge + planet gear + 1 fork + 3 spacers
-            305 x 200 mm, 275 cm3, tallest part 34.5 mm
-  Plate 12  lid + 3 forks + sun gear
-            170 x 220 mm, 132 cm3, tallest part 13.1 mm
+  Plate 11  base plate + servo bridge + planet gear + 1 wheel fork + 3 elbow spacers
+            305 x 200 mm of bed, 275 cm3, tallest part 34.5 mm.
+            USE A BRIM. The 200 x 200 base plate is the most warp-prone thing we print
+            and it shares this job with six other parts, so a lifted corner costs all
+            seven. Watch the first few layers before you walk away.
 
-  Two is the minimum. The base plate is 200 x 200 and the lid is 170 x 170, and they
-  cannot share a 320 mm bed in any orientation - placing the base leaves a widest
-  contiguous free width of 120 mm, and the lid needs 170. So one of them starts a
-  second plate no matter how the rest is arranged.
+  Plate 12  lid + 3 wheel forks + sun gear
+            170 x 220 mm of bed, 132 cm3, tallest part 13.1 mm.
 
-  The cost of Plan A: the base plate is the most warp-prone part we have and the most
-  expensive to redo, and on Plate 11 it shares a job with six other parts. If a corner
-  lifts and the nozzle catches it, all seven are lost. The 3 elbow spacers are also
-  only 1.5 mm tall, so they finish in ten layers and then sit under 160 more layers of
-  nozzle travel.
+  Supports: touching buildplate. Both plates are laid out and centred already - open
+  the .3mf, slice, print. The .stl beside each is the welded fallback.
 
-PLAN B - four plates (base plate isolated, safer).  Plates 6 to 9, already here.
-  Plate 6   mechanism + bridge      Planet gear, Servo bridge, 4 Wheel forks, Sun gear
-  Plate 7   elbow spacer x3
-  Plate 8   base plate              alone
-  Plate 9   lid                     alone
+Two is the minimum, not a convenience. The base plate is 200 x 200 and the lid is
+170 x 170; once the base is placed, the widest contiguous free width left on a 320 mm
+bed is 120 mm, and the lid needs 170 in either orientation. So one of those two always
+starts a second plate, however the small parts are packed around them.
 
-Plan A halves the jobs; Plan B isolates the one part worth protecting. Do not print
-plates from both plans - you would make every part twice.
+Orientation comes from measured flat-face area, not assumption: lid, servo bridge,
+wheel forks and sun gear are all FLIPPED; base plate and planet gear go as-is. The
+forks matter most - the wrong way up they land on 0.01 cm2 of flat face against
+3.15 cm2 flipped, which is the difference between a print and a pile.
 
-Orientations are the same in both plans and come from measured flat-face area, not
-assumption: lid, servo bridge, wheel forks and sun gear are all FLIPPED; base plate and
-planet gear go as-is. The wheel forks matter most - the wrong way up they have 0.01 cm2
-of flat face on the bed against 3.15 cm2 flipped.
+Plates 6 to 9 were the earlier four-plate version of this same set and are deleted, so
+that nothing in this folder can be printed twice. Recover them from git history if the
+packed plates ever need splitting back up (commit 11341f8 and earlier).
+
+Plate 10, the electronics tier, is NOT in this set and must not be printed. The four
+board mounting-hole patterns have never been measured, so its standoffs and pilot holes
+are guesses. Nothing in the turntable test needs the tier, and at 197 cm3 it would be
+the longest print of the lot. It waits for the calipers.
+
+Still unmeasured, and worked around rather than guessed (see D25):
+  - horn blade thickness. POCKET = 2.0 is a bound, not a guess: shallower than the
+    blade only engages less, deeper would leave the horn loose. If it measures thicker,
+    deepening it is a reprint of the planet gear alone.
+  - horn hole diameter. Tap holes stay at 2.4 mm, right for M3 and drillable if M4.
 
 
 ARM (Arm Human + flat-finger gripper) - all printed
@@ -57,44 +62,36 @@ ARM (Arm Human + flat-finger gripper) - all printed
   Plate 5   tight fits              the parts resized by plate 1's measurements (see D17)
   Plate A   plates 2 + 3 combined
 
-  Plate 7   elbow spacer x3         REPRINT (Plan B only - Plan A puts these on Plate 11).
-                                    The one from Plate 2/A went missing. Tiny ring
-                                    (OD 11.0, bore 8.4, 1.5 tall) under the M8 elbow bolt;
-                                    it presses on the 608's inner race only. The arm needs one.
+  One arm part is still outstanding: the Elbow Spacer from Plate 2/A went missing. It is
+  a tiny ring (OD 11.0, bore 8.4, 1.5 tall) that sits under the M8 elbow bolt and presses
+  on the 608's inner race only. The arm needs one; three are on Plate 11.
 
 BASE (Siddharth's turntable, generated by ..\Base\grap_base_pivot.py) - none printed yet
-  Plate 6   mechanism + bridge      Planet gear x1, Servo bridge x1 (flipped), Wheel fork x4
-                                    (flipped), Sun gear x1 (flipped). 297 x 145 mm of bed,
-                                    so all seven are one job. Supports: touching buildplate.
-  Plate 8   base plate              200 x 200 x 10, flat side down, 215 cm3. Brim.
-  Plate 9   lid                     170 x 170 x 7, flipped so its big flat face is on the bed.
-  Plate 10  electronics tier        NOT READY - do not print. The four board mounting-hole
-                                    patterns have never been measured, so the standoffs and
-                                    their pilots are guesses. Nothing in the turntable test
-                                    needs the tier, and at 197 cm3 it is the longest print
-                                    of the set, so it waits for the calipers.
+The plates are listed at the top. Things worth knowing before any of it goes together:
 
-  8 and 9 are each alone on their plate - two of them will not fit side by side on a
-  320 mm usable bed. Agree with Siddharth who prints these before starting.
-
-  Plate 6 was rebuilt on Nov 22 and the Nov 21 version of it was deleted, not kept. If you
-  have a copy of "Plate 6 - base mechanism (horn measured, Nov 21)", throw it away:
-
+  Throw away any copy of "Plate 6 - base mechanism (horn measured, Nov 21)" and of the
+  Nov 22 plates 6 to 9. All are deleted here, and all are superseded by plates 11 and 12.
+  The Nov 21 one is actively wrong:
     - its planet gear has a hub pocket of radius 5.55 for a hub that measures 7.00. The
       aluminium horn's hub OD is 14.0, not the 10.5 recorded on Nov 21 - that reading was
       taken on a different horn out of the pack of three. The horn would not drop in.
-    - its wheel forks were the wrong way up, with 0.01 cm2 of flat face on the bed. Flipped
-      they get 3.15 cm2. The forks themselves did not change, only the orientation.
+    - its wheel forks were upside down, on 0.01 cm2 of flat face. The forks themselves
+      did not change, only the orientation.
 
-  The servo bridge is now on a plate. SERVO_TAB_FACE (9.0) and HORN_T (6.0) are measured,
-  which was what held it back, and the 2 mm the servo moved when SERVO_SHAFT_OFFSET went
-  10.0 -> 8.0 also took the bridge's pilot foot from 0.51 mm inside SLOT_R_IN out to 1.92 mm.
-  Two things to know before it goes in:
-    - the blade pocket in the planet gear is 2.0 deep against an unmeasured blade thickness.
-      Shallower than the blade is harmless; deeper would leave the horn loose. If the blade
-      measures thicker, deepening it is a reprint of the planet gear alone (19 cm3).
-    - if the 12 floor pilots in Enclosure.SLDPRT were placed against the old bridge, they are
-      2 mm out now. Check with Siddharth before drilling or gluing anything.
+  The servo bridge is printable for the first time. SERVO_TAB_FACE (9.0) and HORN_T (6.0)
+  are measured, which was what had held it back, and the 2 mm the servo moved when
+  SERVO_SHAFT_OFFSET went 10.0 -> 8.0 also took the bridge's pilot foot from 0.51 mm
+  inside SLOT_R_IN out to 1.92 mm clear.
+
+  Two open questions for Siddharth, neither of them a caliper job:
+    - the outer horn screw at 25.0 lands off the planet gear's top plate (hole edge 26.2
+      against a plate radius of 23.75), so only the inner screw at 20.0 bites and the
+      horn's tip overhangs by 4.25 mm. With the hub at 14.0 the hub pocket carries the
+      torque in shear, so one screw is probably enough. Making both land means growing
+      the plate to about radius 27, which then sits over the sun gear with 0.5 mm to spare.
+    - if the 12 floor pilots in Enclosure.SLDPRT were placed against the old bridge, they
+      are 2 mm out now. The Enclosure.STL we hold shows no pilot features at all, so it
+      cannot settle it. Check before drilling or gluing anything.
 
 Folders 0-3 are the single STLs the arm plates were built from; they duplicate
 ..\STL\Arm Human\ and are kept on Vyom's laptop only, not in the repo.

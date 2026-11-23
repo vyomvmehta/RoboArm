@@ -418,3 +418,44 @@ withdrawn: the four board hole patterns have never been measured, nothing in the
 test needs the tier, and at 197 cm3 it is the longest print of the set.
 
 All seven parts rebuild `valid=True`.
+
+## D26: Two packed plates for the whole base, four-plate set deleted (2026-11-22, Vyom chose)
+
+All twelve unprinted parts - base plate, lid, servo bridge, planet gear, sun gear, 4 wheel
+forks, 3 elbow spacers - go on **two** plates instead of four. 407 cm3 either way.
+
+| | contents | footprint | plastic | tallest |
+|---|---|---|---|---|
+| Plate 11 | base plate, servo bridge, planet gear, 1 fork, 3 spacers | 305 x 200 | 275 cm3 | 34.5 |
+| Plate 12 | lid, 3 forks, sun gear | 170 x 220 | 132 cm3 | 13.1 |
+
+**Two is a floor, not a preference.** The base plate is 200 x 200 and the lid is 170 x 170.
+Once the base is placed on a 320 mm bed the widest *contiguous* free width left is 120 mm, and
+the lid needs 170 in either orientation because it is square. So one of the two always starts a
+second plate, however the small parts are packed around them.
+
+`make_plates.plate()` could not produce this. It fills the bed in rows, and a row-based layout
+cannot reach the 105 x 230 column beside a 200 mm square part - it was failing the bed-depth
+check at 262 mm. `Print Nov 18/pack_plates.py` is a free-rectangle guillotine packer with
+90-degree rotation and first-fit-decreasing across plates. Verified by parsing the written 3MF
+files back rather than trusting the packer: 12 parts, each present exactly once, no
+bounding-box overlaps, everything inside the bed and sitting on z = 0.
+
+**The accepted risk.** Plate 11 puts the 200 x 200 base plate - the most warp-prone part in the
+project and the most expensive to redo - in a job with six others, so one lifted corner costs
+all seven. The three elbow spacers are 1.5 mm tall and then sit under ~160 further layers of
+nozzle travel. Vyom chose this over the four-plate alternative; the README says to brim it and
+watch the first layers.
+
+**Plates 6 to 9 are deleted**, not kept as an alternative. Every part on them is on 11 or 12,
+so leaving both sets in the folder invited printing something twice - the exact failure the
+packing was meant to avoid. They are recoverable from history at 11341f8 if the plates ever
+need splitting back up.
+
+Plate 10 (electronics tier) remains out of the set and must not be printed: the four board
+mounting-hole patterns have never been measured, so its standoffs and pilots are guesses.
+
+Side effect worth recording: `make_plates.py` had never been committed. It existed only in a
+scratch directory, so no teammate and no other Claude session could regenerate **any** plate in
+that folder, the arm plates included. It and `pack_plates.py` are now in the repo with relative
+paths and run under plain python with no cadquery.
