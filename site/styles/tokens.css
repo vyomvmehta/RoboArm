@@ -1,0 +1,79 @@
+/* Design tokens: the single source of truth for colour, type, spacing and layout.
+   Never hard-code a colour or a size in a component.
+
+   The idea: the site is the workbench. The arm stands on a green cutting mat whose grid
+   is true to scale (one small square = 10 mm), and everything else stays quiet around it.
+   Every colour is taken from something on that bench:
+     mat      the cutting mat itself
+     matline  the mat's printed grid
+     chalk    the white markings on the mat
+     signal   the yellow signal lead on every hobby servo: used ONLY for the target and
+              for values that are live
+     power    the red power lead: used ONLY when a target is refused
+     pla      the black PLA the arm is printed in
+   Type: Sofia Sans, a DIN-style face (the lettering of engineering drawings and machine
+   plates), with its Extra Condensed cut for headlines. Numbers use its tabular figures.
+   Monospace is reserved for text that really is machine text: a serial frame, code. */
+
+:root {
+  color-scheme: light dark;
+
+  --mat: #0f5c4b;
+  --mat-deep: #0a4437;
+  --matline: #7fc8a9;
+  --chalk: #f4f7f2;
+  --signal: #ffd23f;
+  --power: #ff6b4a;
+  --pla: #000000;
+
+  /* reading surfaces */
+  --page: #ffffff;
+  --page-alt: #eef3ef;       /* a quiet band, tinted from the mat */
+  --ink: #0b1f1a;
+  --ink-soft: #46584f;
+  --line: #c9d5ce;
+  --link: var(--mat);
+  --refused: #b3261e;        /* refusal text on a light surface */
+
+  /* ---- type ---- */
+  --font-text: var(--font-sofia), "Sofia Sans", "Bahnschrift", "DIN Alternate", system-ui, sans-serif;
+  --font-display: var(--font-sofia-xc), "Sofia Sans Extra Condensed", "Bahnschrift Condensed", "Arial Narrow", sans-serif;
+  --font-machine: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+
+  /* scale: 17 / 21 / 28 / 40 / 64-128, body 17-18 px */
+  --text-sm: 0.9375rem;
+  --text-base: clamp(1.0625rem, 1.02rem + 0.2vw, 1.125rem);
+  --text-lg: clamp(1.25rem, 1.18rem + 0.35vw, 1.4rem);
+  --text-xl: clamp(1.6rem, 1.4rem + 1vw, 2.1rem);
+  --text-2xl: clamp(2.4rem, 1.7rem + 3.4vw, 4rem);
+  --text-display: clamp(3.25rem, 1.6rem + 8.2vw, 8rem);
+
+  /* ---- spacing (4 px base) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 7rem;
+
+  /* ---- layout ---- */
+  --page-max: 76rem;
+  --measure: 62ch;
+  --gutter: clamp(1rem, 4.5vw, 3rem);
+  --header-h: 4rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #07130f;
+    --page-alt: #0c1d17;
+    --ink: #f4f7f2;
+    --ink-soft: #a9bdb3;
+    --line: #23382f;
+    --link: var(--matline);
+    --refused: #ff8f75;
+  }
+}
