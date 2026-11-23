@@ -307,9 +307,21 @@ Replaces the tilting, curled mitten fingers (D17 updates Nov 11–12). Nov 15 th
 - **Base fit issues found (for Siddharth, before printing the box and tray):** the tray's lip corners (R6) don't fit the box's R10 inside corners (~20 mm³ per corner, so the tray won't seat): lip corner radius ≥ 10.4. The box's corner pilot holes sit ~1 mm outside the middle of the wall (~1.25 mm skin outside an M3). Horn + servo tab height in `grap_base_pivot.py` are still guesses (planet gear, servo bridge). No STL of the box yet.
 - **Print set (Nov 18):** `SolidWorks Parts/STL/Arm Human/`, 18 files, Fine, mm: Shoulder Bracket, Shoulder Cap ×2, Upper Arm, Upper Arm Skin, Crank, Rod, Forearm, Forearm Skin, Elbow Spacer, Wrist Bracket, Wrist Cap, Wrist Cuff, Palm Cover, Gripper Body, Pinion, Rack ×2, Fingers, Thumb. ~296 g if solid (normal infill: well under the 300 g batch B budget). Bambu P2S, PLA Basic, default profile (D15). Skins, cuff and palm cover are thin curved shells: check supports in the slicer.
 
-## D24: Aluminium servo horn measured; base print set (2026-11-22, Siddharth measured, Claude applied)
+## D24: Disarm parks first; a second press is the emergency stop (2026-11-18, Vyom; PR #15, needs Ishaan + Siddharth to agree)
 
-> **Superseded the same day by D25.** The horn Siddharth measured was not the one that goes
+> **Restored 2026-11-22.** Added by a9d653d on Nov 18 and then dropped by a merge
+> resolution on `cad/arm-shell`, so D24 was cited by `arm/control.py` and
+> `docs/PROTOCOL.md` while the decision itself was missing from this file. The text
+> below is verbatim from a9d653d; nothing has been reworded.
+
+**What:** pressing Disarm makes the laptop ramp the arm to the park pose (normal speed caps, firmware limiter behind it) and only then send `D`. While it is parking the button reads **"Stop now"**: pressing it sends `D` immediately, wherever the arm is. The browser disconnecting also parks first (dead-man rule). If the park move is refused on the way or takes over 15 s, the laptop goes limp where the arm stopped and shows the reason on the page.
+**Why:** `D` makes every servo limp at once; sent mid-reach it drops the arm onto the base or the table. Park is where a limp arm rests, so parking first makes going limp a non-event. But the button exists for the moment a finger is in the way, so an instant stop must stay one press away (Ishaan's review of PR #15).
+**Alternatives:** (a) firmware ramps to park on `D`: needs park as pulses in the sketch, a copy of the laptop's calibration in the hardest place to change it (PR #12 discussion); (b) `D` always instant: simplest, but every normal disarm drops the arm; (c) a separate always-limp button: works too, but two red buttons is easier to get wrong under pressure than one button whose label changes.
+**Protocol:** wire format unchanged; only *when* the laptop sends `D` changed (PROTOCOL.md section 3).
+
+## D25: Aluminium servo horn measured; base print set (2026-11-22, Siddharth measured, Claude applied)
+
+> **Superseded the same day by D26.** The horn Siddharth measured was not the one that goes
 > on the turntable. Its numbers are kept below for the record; do not build from them.
 
 The planet gear's horn pocket was built from guessed numbers (`HORN_LEN 35.0, HORN_W 8.0,
@@ -346,9 +358,9 @@ gear - a wrong value breaks the mesh. Two more readings close it. Related: the t
 holes sit ~0.5 mm inside `SLOT_R_IN` and clear the arc slots only through the angular gap;
 recheck once `SERVO_SHAFT_OFFSET` is confirmed.
 
-## D25: The horn measured was the wrong horn; hub is 14.0 (2026-11-22, Vyom measured, Claude applied)
+## D26: The horn measured was the wrong horn; hub is 14.0 (2026-11-22, Vyom measured, Claude applied)
 
-There are three aluminium horns in the pack. D24's readings came off one of them; Vyom put
+There are three aluminium horns in the pack. D25's readings came off one of them; Vyom put
 calipers on **the one that actually goes on the turntable servo** and it is a different part.
 That is the whole explanation for the conflict between Ishaan's Nov 10 record (three holes at
 8 / 20 / 29, Ø3.0) and Siddharth's Nov 21 record (two holes at 20.0 / 24.5) - they were
@@ -358,7 +370,7 @@ Settled first, because it needs no datum: **the horn has two holes, 5.0 mm apart
 same-edge to same-edge. Ishaan's three-hole horn would have given gaps of 12 and 9, so
 8/20/29 is not this part.
 
-| | D24 (wrong horn) | D25 (turntable horn) |
+| | D25 (wrong horn) | D26 (turntable horn) |
 |---|---|---|
 | hub OD | 10.5 | **14.0** |
 | hub pocket radius | 5.55 | **7.30** |
@@ -370,12 +382,12 @@ same-edge to same-edge. Ishaan's three-hole horn would have given gaps of 12 and
 | `SERVO_SHAFT_OFFSET` | 10.0 *guess* | **8.0** |
 | tab hole spacing | 49 x 10 *assumed* | **49 x 10 confirmed** |
 
-**The hub is the part that matters.** D24 moved that pocket from radius 6.80 down to 5.55 and
+**The hub is the part that matters.** D25 moved that pocket from radius 6.80 down to 5.55 and
 called the old value 2.5 mm oversize on diameter. It was the correction that was wrong: the
 hub measures 7.00, so 5.55 is 1.45 mm *undersize* on radius and the horn does not drop in at
 all. The original guess of 13.0 was nearer the truth than the "measurement" that replaced it.
 
-**D24's inference about the arm width was also unsound**, even though the answer came out
+**D25's inference about the arm width was also unsound**, even though the answer came out
 right. 6.0 was derived as `2 x (27.5 - 24.5)`, which assumes the outer screw sits exactly on
 the centre of the tip circle, and rests on the disputed 24.5. The sheet records the horn's
 *height* as 0.6 cm, so the "6" on it is the thickness, not the width. Measuring the blade
@@ -419,7 +431,7 @@ test needs the tier, and at 197 cm3 it is the longest print of the set.
 
 All seven parts rebuild `valid=True`.
 
-## D26: Two packed plates for the whole base, four-plate set deleted (2026-11-22, Vyom chose)
+## D27: Two packed plates for the whole base, four-plate set deleted (2026-11-22, Vyom chose)
 
 All twelve unprinted parts - base plate, lid, servo bridge, planet gear, sun gear, 4 wheel
 forks, 3 elbow spacers - go on **two** plates instead of four. 407 cm3 either way.

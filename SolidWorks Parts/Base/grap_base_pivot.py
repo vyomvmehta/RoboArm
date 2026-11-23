@@ -120,7 +120,7 @@ PLANET_FACE, PLANET_PLATE, POCKET = SUN_FACE - 0.5, 4.5, 2.0
 # every plausible blade (the OEM plastic horn on the sheet is the thinnest at 2.0, and aluminium
 # blades are thicker), so this pocket is safe whatever the blade turns out to be. If it measures
 # thicker, deepening the pocket to match is a reprint of this one small part, not a redesign.
-# POCKET feeds z_horn_bottom 1:1, so it also sets the bridge height - see D25.
+# POCKET feeds z_horn_bottom 1:1, so it also sets the bridge height - see D26.
 z_horn_bottom = z_planet + PLANET_FACE + 0.5 + PLANET_PLATE - POCKET
 z_case_top = z_horn_bottom + HORN_T + HORN_TO_CASE
 z_tab_face = z_case_top + SERVO_TAB_FACE

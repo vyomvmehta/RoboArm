@@ -124,7 +124,7 @@ def write_stl(out, placed):
     return len(tris)
 
 
-# Everything not yet printed. Orientation from the measured flat-face areas (see D25 / README).
+# Everything not yet printed. Orientation from the measured flat-face areas (see D26 / README).
 ITEMS = [
     ("Base plate",   STL / "grap_base.stl",         1, None),
     ("Lid",          STL / "grap_lid.stl",          1, mp.flip),

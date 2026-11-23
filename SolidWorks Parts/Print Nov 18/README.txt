@@ -47,7 +47,7 @@ board mounting-hole patterns have never been measured, so its standoffs and pilo
 are guesses. Nothing in the turntable test needs the tier, and at 197 cm3 it would be
 the longest print of the lot. It waits for the calipers.
 
-Still unmeasured, and worked around rather than guessed (see D25):
+Still unmeasured, and worked around rather than guessed (see D26):
   - horn blade thickness. POCKET = 2.0 is a bound, not a guess: shallower than the
     blade only engages less, deeper would leave the horn loose. If it measures thicker,
     deepening it is a reprint of the planet gear alone.
