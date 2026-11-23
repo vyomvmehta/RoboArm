@@ -40,19 +40,21 @@ BRG_OD, BRG_W, BRG_ID = 22.0, 7.0, 8.0            # 608 bearing
 BOLT_D, BOLT_HEAD_AF, BOLT_HEAD_H, BOLT_LEN = 8.0, 13.0, 5.3, 25.0   # M8 x 25 hex bolt
 NUT_H = 6.5                                        # M8 nut
 SERVO_L, SERVO_W, SERVO_CASE_H = 40.6, 19.9, 37.0  # MG996R
-SERVO_SHAFT_OFFSET = 10.0              # shaft axis to the near end of the body
-SERVO_TAB_FACE = 10.5                  # shaft-side case top down to the tab face - MEASURE
-TAB_HOLES_L, TAB_HOLES_W = 49.0, 10.0
+SERVO_SHAFT_OFFSET = 8.0               # shaft axis to the near end of the body (measured Nov 22)
+SERVO_TAB_FACE = 9.0                   # shaft-side case top down to the tab face (measured Nov 22)
+TAB_HOLES_L, TAB_HOLES_W = 49.0, 10.0  # confirmed with calipers Nov 22
 # Aluminium horn, measured by Siddharth (Nov 21), all from the hub centre:
 #   27.5 to the end of the horn, screw holes at 20.0 and 24.5 (centre to centre).
 # The outer screw sits on the centre of the rounded tip, so the arm half-width is
 # 27.5 - 24.5 = 3.0, i.e. the arm is 6.0 wide - which matches the "x 6" on the sheet.
-HORN_ARM_END = 24.5                    # hub centre to the tip circle's centre = outer screw
-HORN_TIP = 27.5                        # hub centre to the far end of the horn (measured)
-HORN_W = 2 * (HORN_TIP - HORN_ARM_END) # 6.0, arm width = tip circle diameter
-HORN_SCREWS = [20.0, 24.5]             # screw positions from the hub centre (measured)
-HORN_HUB_D = 10.5                      # round hub at the horn's centre (measured)
-HORN_T = 6.0                           # horn thickness - from the sheet; only sets the bridge height
+HORN_ARM_END = 25.0                    # hub centre to the tip circle's centre = outer screw
+HORN_TIP = 27.0                        # hub centre to the far end of the horn (measured)
+HORN_W = 6.0                           # measured at the hub end and at the tip; waists to 4.0 mid-blade,
+                                       # so a straight 6.0 pocket contacts at the hub and the tip only
+HORN_SCREWS = [20.0, 25.0]             # screw positions from the hub centre (measured Nov 22; 5.0 apart)
+HORN_HUB_D = 14.0                      # round hub OD, measured Nov 22 on the TURNTABLE horn.
+                                       # Siddharth's 10.5 was a different horn out of the pack of 3.
+HORN_T = 6.0                           # total height through the hub, measured Nov 22 (matches the sheet)
 HORN_TO_CASE = 1.5
 
 # ---- Gears ----
@@ -111,7 +113,14 @@ SUN_FLANGE_T, SUN_FACE = 1.5, 8.0
 z_sun_top = z_sun_flange + SUN_FLANGE_T + SUN_FACE
 z_head_seat = z_sun_top - BOLT_LEN             # bolt end flush with the sun gear top
 z_planet = z_sun_flange + SUN_FLANGE_T + 0.5
-PLANET_FACE, PLANET_PLATE, POCKET = SUN_FACE - 0.5, 4.5, 3.0
+PLANET_FACE, PLANET_PLATE, POCKET = SUN_FACE - 0.5, 4.5, 2.0
+# POCKET is the pocket depth cut for the horn blade. It must be <= the blade thickness: equal gives
+# full side engagement, shallower just engages less, DEEPER leaves the horn loose and is the only
+# failure mode. The blade thickness is still unmeasured, so 2.0 is deliberate: it is at or below
+# every plausible blade (the OEM plastic horn on the sheet is the thinnest at 2.0, and aluminium
+# blades are thicker), so this pocket is safe whatever the blade turns out to be. If it measures
+# thicker, deepening the pocket to match is a reprint of this one small part, not a redesign.
+# POCKET feeds z_horn_bottom 1:1, so it also sets the bridge height - see D25.
 z_horn_bottom = z_planet + PLANET_FACE + 0.5 + PLANET_PLATE - POCKET
 z_case_top = z_horn_bottom + HORN_T + HORN_TO_CASE
 z_tab_face = z_case_top + SERVO_TAB_FACE

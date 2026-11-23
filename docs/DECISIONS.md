@@ -309,6 +309,9 @@ Replaces the tilting, curled mitten fingers (D17 updates Nov 11–12). Nov 15 th
 
 ## D24: Aluminium servo horn measured; base print set (2026-11-22, Siddharth measured, Claude applied)
 
+> **Superseded the same day by D25.** The horn Siddharth measured was not the one that goes
+> on the turntable. Its numbers are kept below for the record; do not build from them.
+
 The planet gear's horn pocket was built from guessed numbers (`HORN_LEN 35.0, HORN_W 8.0,
 HORN_HUB_D 13.0, HORN_SCREWS [10.0, 20.0]`). Siddharth put calipers on the real horn, all
 from the hub centre: **27.5** to the end of the horn, screw holes at **20.0** and **24.5**
@@ -342,3 +345,76 @@ a guess) and `HORN_T` (6.0, datasheet not calipers), which set where the horn me
 gear - a wrong value breaks the mesh. Two more readings close it. Related: the two bridge pilot
 holes sit ~0.5 mm inside `SLOT_R_IN` and clear the arc slots only through the angular gap;
 recheck once `SERVO_SHAFT_OFFSET` is confirmed.
+
+## D25: The horn measured was the wrong horn; hub is 14.0 (2026-11-22, Vyom measured, Claude applied)
+
+There are three aluminium horns in the pack. D24's readings came off one of them; Vyom put
+calipers on **the one that actually goes on the turntable servo** and it is a different part.
+That is the whole explanation for the conflict between Ishaan's Nov 10 record (three holes at
+8 / 20 / 29, Ø3.0) and Siddharth's Nov 21 record (two holes at 20.0 / 24.5) - they were
+measuring different horns, and neither was necessarily this one.
+
+Settled first, because it needs no datum: **the horn has two holes, 5.0 mm apart**, measured
+same-edge to same-edge. Ishaan's three-hole horn would have given gaps of 12 and 9, so
+8/20/29 is not this part.
+
+| | D24 (wrong horn) | D25 (turntable horn) |
+|---|---|---|
+| hub OD | 10.5 | **14.0** |
+| hub pocket radius | 5.55 | **7.30** |
+| screw holes from hub centre | 20.0, 24.5 | **20.0, 25.0** |
+| hub centre to tip | 27.5 | **27.0** |
+| blade width | 6.0 *inferred* | **6.0 measured** (waists to 4.0 mid-blade) |
+| height through the hub | 6.0 *datasheet* | **6.0 measured** |
+| `SERVO_TAB_FACE` | 10.5 *guess* | **9.0** |
+| `SERVO_SHAFT_OFFSET` | 10.0 *guess* | **8.0** |
+| tab hole spacing | 49 x 10 *assumed* | **49 x 10 confirmed** |
+
+**The hub is the part that matters.** D24 moved that pocket from radius 6.80 down to 5.55 and
+called the old value 2.5 mm oversize on diameter. It was the correction that was wrong: the
+hub measures 7.00, so 5.55 is 1.45 mm *undersize* on radius and the horn does not drop in at
+all. The original guess of 13.0 was nearer the truth than the "measurement" that replaced it.
+
+**D24's inference about the arm width was also unsound**, even though the answer came out
+right. 6.0 was derived as `2 x (27.5 - 24.5)`, which assumes the outer screw sits exactly on
+the centre of the tip circle, and rests on the disputed 24.5. The sheet records the horn's
+*height* as 0.6 cm, so the "6" on it is the thickness, not the width. Measuring the blade
+directly gives 6.0 at the hub end and at the tip, waisting to 4.0 in the middle - so a
+straight 6.0-wide pocket touches at the hub and the tip only, which is fine.
+
+**Still unmeasured, and printed around rather than guessed:**
+
+- *Blade thickness.* It sets `POCKET`, the pocket depth. The constraint is one-sided: a pocket
+  shallower than the blade merely engages less, a pocket deeper leaves the horn loose. So
+  `POCKET = 2.0`, at or below every plausible blade (the OEM plastic horn on the sheet is the
+  thinnest thing in the family at 2.0, and aluminium blades are thicker). Not a guess - a
+  bound. `POCKET` feeds `z_horn_bottom` 1:1, so it also sets the bridge height: 2.0 gives a
+  34.5 bridge and 2.50 of headroom under the 70 box, 4.0 would give 32.5 and 4.50. Every value
+  in that range clears, so this cannot fail by fouling the lid. If the blade measures thicker,
+  deepening the pocket is a reprint of the planet gear alone.
+- *Horn hole diameter.* The tap holes in the planet gear stay Ø2.4, right for M3. If the holes
+  turn out to be M4 a Ø2.4 hole can be drilled out; an oversize one cannot be undone.
+
+**Two findings that are design questions, not measurements:**
+
+1. The outer screw at 25.0 lands off the planet gear's top plate - its hole edge reaches 26.2
+   and the plate stops at radius 23.75 - so only the inner screw at 20.0 bites, and the horn's
+   tip overhangs the plate by 4.25 mm. With the hub now 14.0 the hub pocket carries the torque
+   properly in shear, so one screw is probably enough. Making both land means growing the plate
+   to about radius 27, which would then sit over the sun gear with 0.5 mm of clearance. Open.
+2. `SERVO_SHAFT_OFFSET` 10.0 -> 8.0 moved the servo 2 mm (`servo_cx` -22.2 -> -20.2). Good:
+   the bridge pilot foot that sat 0.51 mm inside `SLOT_R_IN` is now 1.92 mm clear. Bad: if the
+   12 floor pilots in `Enclosure.SLDPRT` were placed against the old bridge they are 2 mm out.
+   Not confirmable from the `Enclosure.STL` we hold - it shows no pilot features at all, so it
+   either predates them or they never reached the STL. Check with Siddharth.
+
+**Print set.** Plate 6 is rebuilt and now holds all seven unprinted mechanism parts in one
+job, 297 x 145 mm: planet gear, servo bridge, 4 wheel forks, sun gear. The servo bridge is on
+a plate for the first time, because `SERVO_TAB_FACE` and `HORN_T` are what had blocked it.
+The Nov 21 Plate 6 is deleted - besides the hub, its wheel forks were upside down with 0.01
+cm2 of flat face on the bed against 3.15 cm2 flipped. Plates 8 and 9 are byte-identical to
+what was committed at 0aa2d40 and can be printed as they are. Plate 10 (electronics tier) is
+withdrawn: the four board hole patterns have never been measured, nothing in the turntable
+test needs the tier, and at 197 cm3 it is the longest print of the set.
+
+All seven parts rebuild `valid=True`.
