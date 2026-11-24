@@ -471,3 +471,39 @@ Side effect worth recording: `make_plates.py` had never been committed. It exist
 scratch directory, so no teammate and no other Claude session could regenerate **any** plate in
 that folder, the arm plates included. It and `pack_plates.py` are now in the repo with relative
 paths and run under plain python with no cadquery.
+
+## D28: arm.yaml described a base we are not building; shoulder is 134.5, not 174.5 (2026-11-24, Claude found while writing ASSEMBLY.md, Vyom to confirm)
+
+Two numbers in `config/arm.yaml` silently assumed the 40 mm electronics tray that **is not
+printed and must not be printed** (Plate 10 waits on the four board mounting-hole patterns, D27).
+
+| | was | now | made of |
+|---|---|---|---|
+| `links.shoulder_height` | 174.5 | **134.5** | plate 6 + wheel gap 4.5 + box 70 + lid 4 + 50 to the bracket axis |
+| `base_clearance.plate_top_below_shoulder` | 168.5 | **128.5** | `shoulder_height - 6` |
+
+The second one was wrong in the unsafe direction. `arm/clearance.py` treats the fixed base plate
+as an obstacle at `z <= -plate_top_below_shoulder`, so an over-large value puts the plate further
+below the arm than it really is and lets through poses that reach it. Keep the two in step:
+`plate_top_below_shoulder = shoulder_height - 6`, always.
+
+`lid_below_shoulder: 50` is unaffected and stays. The lid turns with the arm and its distance to
+the shoulder axis is set by the bracket (axis 50.0 above its underside), not by the tray. That is
+also why the joint `limits` and the `park` wrist angle need no revisiting: they came from
+lid-relative CAD checks.
+
+**The cost: one pose.** Of the 20 poses in the Nov 17 SolidWorks check (D23), 19 still clear.
+**"near" (theta1 24, forearm -80, wrist -10) does not.** The palm cover reaches r 100, z -126
+from the shoulder axis, against a plate top now at -128.5 — it fails the 3 mm margin by about
+half a millimetre. `tests/test_clearance.py` records this explicitly rather than hiding it:
+"near" is out of the `CLEAR` list and has its own test asserting both that it is refused at
+128.5 and that it clears at 168.5.
+
+**Do not widen `margin` to get the pose back.** Either fit a 40 mm spacer under the Shoulder
+Bracket, which restores exactly the geometry the CAD check validated, or print the tray once the
+board holes are measured and put both numbers back to 174.5 / 168.5.
+
+Also fixed in the same pass: the assembly note at the bottom of `arm.yaml` said to fit each horn
+with the servo at **1500 µs**. `config/calibration.yaml` has said `center_us: 1475` for every
+joint since it was written, and says "not 1500" in as many words. The note was simply stale, and
+it is the note a person reads while holding a servo. Now 1475.

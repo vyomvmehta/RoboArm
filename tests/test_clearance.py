@@ -16,8 +16,11 @@ from arm.targets import point_to_joints
 CAD = ArmGeometry(l1=130, l2=120, l3=88)
 
 # (theta1, forearm absolute = theta1 + theta2, theta3), degrees.
+# "near" (24, -80, -10) is NOT in this list: it was clear in the Nov 17 CAD check, which was run
+# on the with-tray base (shoulder 174.5), and it is refused on the as-built no-tray base
+# (shoulder 134.5). See test_near_pose_is_lost_without_the_electronics_tray below and D28.
 CLEAR = [
-    (46, -60, -30), (0, -34, -56), (24, -80, -10), (114, -4, 4),       # home, far, near, high
+    (46, -60, -30), (0, -34, -56), (114, -4, 4),                       # home, far, high
     (60, -30, -70), (60, -30, -80), (60, -30, -90), (60, -30, 50),    # wrist sweep
     (60, 50, -60),                                                    # elbow straight
     (90, -40, -20),                                                   # park (theta3 -20)
@@ -45,6 +48,20 @@ def test_cad_clear_poses_are_clear(arm, pose):
 @pytest.mark.parametrize("pose", COLLIDE)
 def test_cad_colliding_poses_are_refused(arm, pose):
     assert "into the base" in base_collision(CAD, angles(*pose), arm.base_clearance)
+
+
+def test_near_pose_is_lost_without_the_electronics_tray(arm):
+    """D28: dropping the 40 mm tray lowers the shoulder 174.5 -> 134.5 and costs one of the 20
+    CAD-verified poses. At "near" the palm cover reaches r 100, z -126 from the shoulder axis,
+    and the fixed base plate top is now at -128.5, so the 3 mm margin refuses it - by about
+    half a millimetre. Fit a 40 mm spacer under the Shoulder Bracket, or print the tray, to get
+    it back; do NOT widen the margin."""
+    near = angles(24, -80, -10)
+    reason = base_collision(CAD, near, arm.base_clearance)
+    assert reason and "base plate" in reason
+
+    with_tray = dict(arm.base_clearance, plate_top_below_shoulder=168.5)
+    assert base_collision(CAD, near, with_tray) is None
 
 
 def test_old_park_wrist_minus_40_dips_into_the_lid(arm):

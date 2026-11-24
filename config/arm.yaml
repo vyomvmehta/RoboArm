@@ -12,7 +12,14 @@ links:  # D14 (Nov 9): four-bar, l1 13 / l2 12 cm; l3 8.4 cm since D21 (Nov 15).
   l1: 130               # shoulder axis -> elbow axis
   l2: 120               # elbow axis -> wrist axis
   l3: 84                # wrist axis -> grasp point: bracket 20 + gripper 19 + 45 to the middle of the flat jaw pads (D21, Nov 15)
-  shoulder_height: 174.5  # Siddharth's base (Nov 16 review): plate 6 + wheel gap 4.5 + box 70 (measured in Enclosure.SLDPRT) + tray 40 + lid 4, + 50 to the bracket's axis. Re-measure on the printed base
+  # AS BUILT, NO ELECTRONICS TRAY (Nov 24). plate 6 + wheel gap 4.5 + box 70 (measured in
+  # Enclosure.SLDPRT) + lid 4, + 50 to the bracket's axis = 134.5. The 174.5 that stood here
+  # from the Nov 16 review included a 40 mm tray that is not printed and must not be printed
+  # (Plate 10 waits on the four board mounting-hole patterns), so the arm sits 40 mm lower than
+  # that number claimed. If the tray is ever fitted, this goes back to 174.5 and
+  # base_clearance.plate_top_below_shoulder back to 168.5 - change both or neither.
+  # Re-measure on the printed base.
+  shoulder_height: 134.5
   shoulder_offset: 0    # shoulder bracket is centred on the turntable axis (Nov 10)
 
 four_bar:  # D19: parallelogram elbow drive. Crank on the elbow servo = lever behind the elbow
@@ -60,7 +67,9 @@ poses:
 
 workspace:  # targets outside this box are rejected before IK (CLAUDE.md section 5.2)
   r_min: 140            # closer: the hand hits the base's 170 mm box (front face 85 out) or its 200 mm plate (Nov 16)
-  r_max: 230            # on the 174.5 base, 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34
+  r_max: 230            # 240 at z = 25 is nearly straight (elbow ~-11): sloppy + four-bar dead point; 230 keeps ~-34.
+                        # Checked on the 174.5 shoulder height (Nov 16); the 134.5 as-built base only lowers the
+                        # shoulder, so z = 25 is less of a reach, not more. Re-check if the tray is ever fitted.
   z_min: 25             # grasp point = middle of the finger pads; the longest fingertip is 20 below it (D21), so 25 keeps it 5 above the table
   z_max: 250
 
@@ -69,13 +78,19 @@ base_clearance:  # D23 (Nov 17): poses inside the joint limits that still hit Si
   lid_below_shoulder: 50          # lid top is 50 below the shoulder axis: the bracket's axis is 50.0 above its underside
   box_half: 85                    # 170 mm square box (+ tray + lid), turns with the arm
   plate_r: 100                    # fixed base plate reaches 100 mm from the axis
-  plate_top_below_shoulder: 168.5 # plate top 6 mm above the table, shoulder axis 174.5 above it (CAD, Nov 17)
+  # plate top 6 mm above the table, shoulder axis 134.5 above it (= shoulder_height - 6).
+  # AS BUILT, NO TRAY (Nov 24): 128.5, was 168.5 when shoulder_height was 174.5. This one is
+  # load-bearing for safety - too large and the model thinks the fixed plate is further below the
+  # arm than it is, and lets through poses that hit it. Keep it at shoulder_height - 6.
+  plate_top_below_shoulder: 128.5
   forearm_half_width: 18          # Arm Human forearm skin: +-18 mm around the elbow -> wrist line
   hand_origin_from_wrist: 39      # gripper frame origin on the approach line, 39 mm out from the wrist axis
   hand_body: [40, -19, 24]        # body / palm cover: |u| <= 40, v from -19 to 24 along the approach
   hand_fingers: [32, 24, 65]      # flat fingers: |u| <= 32, v from 24 to 65
   margin: 3                       # grow every obstacle by this much; the 2D model matched the 20-pose CAD check
 
-# Assembly note for the CAD and the build: the window centre is where the servo sits at 1500 us.
-# Put each horn on with the servo at 1500 us and the joint at its window centre:
+# Assembly note for the CAD and the build: the window centre is where the servo sits at its
+# mid-travel, which is 1475 us, NOT 1500. config/calibration.yaml is the source of truth for this
+# (center_us: 1475 for every joint, j0_base included); 1500 was this note's error until Nov 24.
+# Put each horn on with the servo at 1475 us and the joint at its window centre:
 #   base 0 (facing forward), shoulder 60, elbow -70, wrist -30.
