@@ -12,16 +12,15 @@ with the parts already arranged, for when Cura re-centres the 3MF's separate obj
 top of each other.
 
 
-WHAT IS LEFT TO PRINT - TWO PLATES
-==================================
-Twelve parts, 407 cm3 of plastic, two jobs. Print both and every GENERATED base part is done.
+WHAT IS LEFT TO PRINT - THREE PLATES
+===================================
+Twelve generated parts on plates 11 and 12, 407 cm3, plus the box on plate 13, 265 cm3.
 
-THE BOX ITSELF IS NOT ONE OF THEM. Both scripts pack only ..\STL\grap_*.stl, the parts
-grap_base_pivot.py generates, and Siddharth's Enclosure is not a generated part - so no plate
-in this folder contains it and none ever could. Nothing in the repo records it as printed
-either. Ask Siddharth, who owns the enclosure under D8's Nov 8 swap. ..\STL\Enclosure.STL does
-carry all 12 floor pilots (2.5 dia, blind, 4.5 deep in the 5 mm floor), but four of them are in
-the wrong place - see D29 and the open questions below.
+Plate 13 is the box, Siddharth's Enclosure, added 2026-11-24 by make_plate13.py. It was on no
+plate before that and could not have been: make_plates.py and pack_plates.py pack only
+..\STL\grap_*.stl, the parts grap_base_pivot.py generates, and the Enclosure is Siddharth's own
+part. Nothing in the repo records the box as printed either, so ASK SIDDHARTH BEFORE PRINTING
+IT - he owns the enclosure under D8's Nov 8 swap and may already have one.
 
   Plate 11  base plate + servo bridge + planet gear + 1 wheel fork + 3 elbow spacers
             305 x 200 mm of bed, 275 cm3, tallest part 34.5 mm.
@@ -32,12 +31,29 @@ the wrong place - see D29 and the open questions below.
   Plate 12  lid + 3 wheel forks + sun gear
             170 x 220 mm of bed, 132 cm3, tallest part 13.1 mm.
 
-  Supports: touching buildplate. Both plates are laid out and centred already - open
-  the .3mf, slice, print. The .stl beside each is the welded fallback.
+  Plate 13  the box. 170 x 170 mm of bed, 265 cm3, 70 mm tall - the single biggest print in
+            the project. Floor flat on the bed, open side up: 254.6 cm2 of first-layer
+            contact, no overhangs, no supports. USE A BRIM, same warp risk as the base plate.
+            One object, so there is no welded .stl fallback beside it - that exists only for
+            plates where Cura re-centres several objects on top of each other.
 
-Two is the minimum, not a convenience. The base plate is 200 x 200 and the lid is
-170 x 170; once the base is placed, the widest contiguous free width left on a 320 mm
-bed is 120 mm, and the lid needs 170 in either orientation. So one of those two always
+            READ D29 FIRST. Four of the box's twelve floor pilots - the servo bridge's - are
+            2.0 mm out: they sit at servo_cx -22.2, the pre-D26 SERVO_SHAFT_OFFSET 10.0
+            position, and the current bridge wants -20.2 (pilots at x 40.8 / 88.8 in the box
+            frame instead of 38.8 / 86.8). The eight wheel-fork pilots are correct, radius
+            55.5 and +-13.5. Printing this plate bakes the error into the part. Either get a
+            corrected Enclosure.SLDPRT from Siddharth first, or print it and drill four fresh
+            pilots - but note a new 2.5 mm pilot only 2.0 mm from an existing one OVERLAPS it,
+            so the bit wanders without a guide, and do NOT enlarge the old holes to span both
+            positions: an M3 self-tapper needs full material and the floor is only 5 thick.
+
+  Supports: touching buildplate. All three plates are laid out and centred already -
+  open the .3mf, slice, print. Where a .stl sits beside a .3mf that is the welded
+  fallback; plate 13 has none because it is a single object and cannot overlap itself.
+
+Two is the minimum for the generated parts, not a convenience. The base plate is 200 x 200
+and the lid is 170 x 170; once the base is placed, the widest contiguous free width left on
+a 320 mm bed is 120 mm, and the lid needs 170 in either orientation. So one of those two always
 starts a second plate, however the small parts are packed around them.
 
 Orientation comes from measured flat-face area, not assumption: lid, servo bridge,
