@@ -30,3 +30,8 @@ desktop.ini
 # JS deps: never commit these. A git add -A with site/ on disk pushes 140 MB and
 # GitHub rejects the whole push (hit 2026-11-18).
 node_modules/
+
+# Pack-and-Go archives: zipped copies of CAD that is already committed loose. Keep them on the
+# laptop for sharing them outside git, but not in the repo - there were 25 MB of them across the
+# two checkouts on Nov 24 and none has ever been tracked.
+*.zip

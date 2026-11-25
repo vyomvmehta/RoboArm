@@ -107,10 +107,13 @@ Uniform across every unit, which is why the limits are uniform rather than per s
 
 ### Centres are not 1500
 
-The measured mid-travel is **1475 us**, not the conventional 1500. `config/arm.yaml`'s assembly
-note says to fit horns at 1500, which would leave every joint 25 us (about 2°) off centre and
-eat into the travel at one end. `calibration.yaml` on `calib/provisional` uses 1475.
-**Settle the horn-fitting pulse before assembly on Nov 19.**
+The measured mid-travel is **1475 us**, not the conventional 1500. Fitting a horn at 1500 leaves
+that joint 25 us (about 2°) off centre and eats into the travel at one end.
+
+**Settled 2026-11-24: 1475 everywhere.** `config/calibration.yaml` is the source of truth and
+sets `center_us: 1475` for every joint, `j0_base` included. `config/arm.yaml`'s assembly note
+carried 1500 until then and now agrees with it; D19's assembly order in DECISIONS.md carried the
+same error and was corrected with it. See D28.
 
 ### The 1200 us "midpoint" was a 360° servo
 
@@ -130,7 +133,7 @@ stop point and "no resistance" was correct behaviour. Confirmed by D16's Nov 8 e
 
 - LM2596 output read with a multimeter during a stall (the Nov 1 task is still in review).
 - Stall torque for the MG996Rs, which decides 13/12 vs 15/14 at the Nov 15 review call.
-- Whether horns are fitted at 1475 (measured centre) or 1500 (arm.yaml's assembly note).
-  Needed before assembly on Nov 19.
+- ~~Whether horns are fitted at 1475 (measured centre) or 1500.~~ Settled 2026-11-24: **1475**.
+  arm.yaml's assembly note and D19's assembly order were both corrected to match (D28).
 - Whether the PD trigger stays at 9 V or goes to 15 V, and D16 updated either way.
 - Kill switch and 2200 uF capacitor installed.

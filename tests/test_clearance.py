@@ -118,5 +118,19 @@ def test_ramp_may_move_out_of_a_colliding_pose():
 
 
 def test_point_to_joints_refuses_a_colliding_solution(arm):
+    """Clearance is the THIRD gate in point_to_joints, after the workspace box and IK, so a target
+    has to get past the first two to exercise it at all.
+
+    (90, 0, 5, -90) did not: r 90 is inside r_min and z 5 is below z_min, so the workspace box
+    refused it first and this test was green on the wrong message, then red from 2026-11-24 when
+    the message was checked. Any point that only fails the box tests the box, not the clearance.
+
+    (152, 0, 40, -50) is r 152, z 40 - inside the box with room above both gates (r_min is 140
+    here and 150 on fix/shoulder-recal) - and IK solves it at shoulder 43.7 / elbow -131.8 /
+    wrist 38.1, which is 3.2 deg clear of the -135 elbow limit. That solution puts the palm cover
+    8 mm inside the lid, so it is refused on geometry and not on the 3 mm margin: it stays refused
+    with margin 0, and on the with-tray plate height as well, so neither D28 nor a margin change
+    can flip it.
+    """
     with pytest.raises(ValueError, match="into the base"):
-        point_to_joints(arm, 90, 0, 5, -90)
+        point_to_joints(arm, 152, 0, 40, -50)

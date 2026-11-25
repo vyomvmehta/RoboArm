@@ -20,10 +20,12 @@ From **Plate 12**: lid, 3 wheel forks, sun gear.
 Already printed: Siddharth's `Enclosure` (the box itself).
 Bought: 1 MG996R, 6 × 608ZZ, M8 × 25 bolt + nut, 4 wheel axles, the screws in HARDWARE.md §3–4.
 
-> `Base box.SLDPRT` in `Full Assembly` is the script's simplified stand-in, **not** Siddharth's
-> real Enclosure. Do not take any dimension off it. The suppression step in `rebuild_base.py`
-> looks for a component named `box_*` while the STEP exports `box.step`, so it has been silently
-> skipping — a known bug, not something to fix mid-assembly.
+> `Base box.SLDPRT` in `Full Assembly` is `box_standin()` out of the script, **not** Siddharth's
+> real Enclosure: 62 KB of simplified shell against the real part's 410 KB. Do not take any
+> dimension off it. `Full Assembly/Enclosure.SLDPRT` is the real box and `STL/Enclosure.STL` is
+> the same thing for a slicer. The script exports both forms deliberately —
+> `grap_base_assembly.step` carries the stand-in, `grap_mechanism.step` leaves it out so the real
+> Enclosure can be inserted at the assembly origin. Use `grap_mechanism.step`.
 
 ## 1. Prepare the box
 
@@ -83,9 +85,10 @@ be screwed down** — the box stands on them.
 - [ ] **Centre the servo before it goes in:** power it and hold **1475 µs**. Fitting the horn at
       any other position throws the travel off centre, and you lose one end of the rotation.
 
-> **1475, not 1500.** `config/arm.yaml` line 79 still says to fit horns at 1500 µs. It is stale:
-> `config/calibration.yaml` sets `center_us: 1475` for every joint, `j0_base` included, and says
-> so explicitly — 1475 is the servos' measured mid-travel. Use 1475.
+> **1475, not 1500.** 1475 µs is the servos' measured mid-travel, uniform across every unit
+> (PINS.md section 5). `config/calibration.yaml` is the source of truth and sets
+> `center_us: 1475` for every joint, `j0_base` included. `config/arm.yaml`'s assembly note said
+> 1500 until Nov 24 and now agrees with it (D28). If you meet 1500 anywhere else, it is stale.
 - [ ] Drop the MG996R into the bridge pocket **shaft down**, 4 tab screws (its own, from the bag).
       The pocket locates it; the screws only clamp it.
 - [ ] **Check:** the shaft-side case top sits at 35.0 and the tab face at 44.0. The bridge is
