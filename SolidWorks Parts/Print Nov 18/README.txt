@@ -37,15 +37,16 @@ IT - he owns the enclosure under D8's Nov 8 swap and may already have one.
             One object, so there is no welded .stl fallback beside it - that exists only for
             plates where Cura re-centres several objects on top of each other.
 
-            READ D29 FIRST. Four of the box's twelve floor pilots - the servo bridge's - are
-            2.0 mm out: they sit at servo_cx -22.2, the pre-D26 SERVO_SHAFT_OFFSET 10.0
-            position, and the current bridge wants -20.2 (pilots at x 40.8 / 88.8 in the box
-            frame instead of 38.8 / 86.8). The eight wheel-fork pilots are correct, radius
-            55.5 and +-13.5. Printing this plate bakes the error into the part. Either get a
-            corrected Enclosure.SLDPRT from Siddharth first, or print it and drill four fresh
-            pilots - but note a new 2.5 mm pilot only 2.0 mm from an existing one OVERLAPS it,
-            so the bit wanders without a guide, and do NOT enlarge the old holes to span both
-            positions: an M3 self-tapper needs full material and the floor is only 5 thick.
+            Built from the CORRECTED box, not the raw export. D29 found the four servo-bridge
+            floor pilots 2.0 mm out, at the pre-D26 SERVO_SHAFT_OFFSET 10.0 position.
+            Nothing had been printed when that turned up, so fix_enclosure_pilots.py moves
+            the holes instead of leaving them to be drilled: they are now at x 40.8 / 88.8
+            in the box frame. The eight wheel-fork pilots were already right, radius 55.5
+            and +-13.5, and are untouched. Nothing to drill - print it and build.
+
+            Enclosure.SLDPRT itself is STILL WRONG. Siddharth needs to move those four holes
+            at the source; re-exporting Enclosure.STL from it brings the error back. Run
+            fix_enclosure_pilots.py again on any fresh export.
 
   Supports: touching buildplate. All three plates are laid out and centred already -
   open the .3mf, slice, print. Where a .stl sits beside a .3mf that is the welded

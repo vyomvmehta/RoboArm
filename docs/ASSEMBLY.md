@@ -17,19 +17,16 @@ box with the 36T planet gear on its horn, so turning the servo walks the planet 
 
 From **Plate 11**: base plate, servo bridge, planet gear, 1 wheel fork, 3 elbow spacers.
 From **Plate 12**: lid, 3 wheel forks, sun gear.
-Bought: 1 MG996R, 6 × 608ZZ, M8 × 25 bolt + nut, 4 wheel axles, the screws in HARDWARE.md §3–4.
+From **Plate 13**: the box.
 
-**OPEN — the box itself is on no plate, and nothing in this repo records it as printed.** An
-earlier draft of this file said "already printed"; that was an assumption, not a fact, and it is
-withdrawn. `pack_plates.py` and `make_plates.py` both read only `STL/grap_*.stl`, the parts
-`grap_base_pivot.py` generates, and the `Enclosure` is Siddharth's own SolidWorks part, so it was
-never inside the packing step's scope — `pack_plates.py`'s part list has six entries and the box
-is not one of them. `README.txt`'s "print both and the base is complete" counts only those twelve
-generated parts. Siddharth owns the enclosure under D8's Nov 8 swap, so **ask him whether it is
-printed before planning around it.** `STL/Enclosure.STL` reached this branch on Nov 24 and does
-carry all 12 floor pilots, Ø2.5 blind, bottoming 4.5 into the 5 mm floor — but four of them are
-in the wrong place; see stage 1 and D29. (`main` has had the same STL since before this branch
-forked, byte for byte.)
+**Settled Nov 24 — nothing in the base has been printed yet**, Vyom
+confirmed, and Siddharth has printed nothing, so the box has to be printed like everything else.
+It had been on no plate and could not have been: `pack_plates.py` and `make_plates.py` read only
+`STL/grap_*.stl`, the parts `grap_base_pivot.py` generates, and the `Enclosure` is Siddharth's own
+part. `make_plate13.py` puts it on one. Three plates, thirteen printed parts, and the base is
+complete.
+
+Bought: 1 MG996R, 6 × 608ZZ, M8 × 25 bolt + nut, 4 wheel axles, the screws in HARDWARE.md §3–4.
 
 > `Base box.SLDPRT` in `Full Assembly` is `box_standin()` out of the script, **not** Siddharth's
 > real Enclosure: 62 KB of simplified shell against the real part's 410 KB. Do not take any
@@ -40,21 +37,29 @@ forked, byte for byte.)
 
 ## 1. Prepare the box
 
-- [ ] **Open the centre hole from 20 to Ø22.2.** The 608's outer race seats in it and 20 will not
-      take it. 22.2 is the UltiMaker fit measured Nov 20 — 22.0 was too tight, 22.4 dropped out.
-- [ ] Check there are **four wheel slots**, at 0°, 90°, 180° and 270°, each spanning radius
-      65–75. Early versions had three; the fourth was added for the 180° position.
-- [ ] Check the **12 floor pilots**: 2.5 mm Ø, 4.5 deep, blind. Eight for the wheel forks at
-      radius 55.5, ±13.5 either side of each slot centreline; four for the servo bridge.
-- [ ] **The bridge's four pilots ARE 2.0 mm out — measured, not suspected (D29).** Read off
-      `STL/Enclosure.STL`: its four bridge pilots sit at x 38.8 and 86.8 in the box frame, which
-      is `servo_cx` -22.2, the old `SERVO_SHAFT_OFFSET` 10.0 position. The bridge now wants 40.8
-      and 88.8 (`servo_cx` -20.2). So **drill four fresh pilots 2.0 mm further from the -x wall**
-      and ignore the originals, or have Siddharth move them in the box.
-- [ ] The **eight fork pilots are correct** — radius 55.5, ±13.5 either side of each slot
-      centreline, exactly as specified. Use them as they are.
-- [ ] Confirm the pilots are **blind**. Nothing may poke through the 5 mm floor — the underside
-      runs on the track.
+**Nothing to prepare, if you print Plate 13.** This stage used to be a list of things to drill and
+bore on a box that already existed. Vyom confirmed on Nov 24 that nothing in the base has been
+printed, so the corrections moved into the geometry instead — Plate 13 comes off the bed ready.
+These are checks on the finished print, not jobs:
+
+- [ ] **Centre hole measures Ø22.2.** Already Ø22.2 in the box, measured off the mesh: 36 vertices
+      at r 11.10 on both the y 0 and y 10 planes, so it is a straight bore through the floor and
+      the boss. An earlier draft of this file told you to open it from 20 — that was wrong, and it
+      came from the superseded Nov 8 `Enclosure.SLDPRT`. 22.2 is the UltiMaker fit measured Nov 20
+      (22.0 too tight, 22.4 dropped out), and the 608's outer race seats straight into it.
+- [ ] **Four wheel slots**, at 0°, 90°, 180° and 270°, each spanning radius 65–75. All four are
+      in the mesh. Early versions had three; the fourth was added for the 180° position.
+- [ ] **12 floor pilots**, 2.5 mm Ø, 4.5 deep, blind — all twelve present, bottoming at y 0.5 in
+      the 5 mm floor. Eight for the wheel forks at radius 55.5, ±13.5 either side of each slot
+      centreline; four for the servo bridge.
+- [ ] **The four bridge pilots are in the corrected place: x 40.8 and 88.8 in the box frame**
+      (`servo_cx` -20.2). The raw export had them at 38.8 / 86.8, `servo_cx` -22.2, which is the
+      pre-D26 `SERVO_SHAFT_OFFSET` 10.0 position — 2.0 mm out. `fix_enclosure_pilots.py` moves
+      them and Plate 13 is built from its output, so **there is nothing to drill**. If you ever
+      print the box from a fresh export of `Enclosure.SLDPRT` instead, the error comes back: the
+      source part has not been fixed. See D29.
+- [ ] Confirm the pilots are **blind** on the printed part. Nothing may poke through the 5 mm
+      floor — the underside runs on the track.
 
 ## 2. Pivot: bolt, bearing, sun gear
 

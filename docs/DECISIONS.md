@@ -509,7 +509,7 @@ with the servo at **1500 µs**. `config/calibration.yaml` has said `center_us: 1
 joint since it was written, and says "not 1500" in as many words. The note was simply stale, and
 it is the note a person reads while holding a servo. Now 1475.
 
-## D29: the box's four bridge pilots are 2.0 mm out, measured off the STL (2026-11-24, Claude measured, Siddharth to action)
+## D29: the box's four bridge pilots were 2.0 mm out; fixed in the STL before printing (2026-11-24, Claude measured and corrected, Enclosure.SLDPRT still to fix)
 
 D26 left this open as "not confirmable from the `Enclosure.STL` we hold - it shows no pilot
 features at all". That reading was wrong. The STL does carry all 12 floor pilots, and reading
@@ -551,4 +551,43 @@ existing pilots to span both positions; an M3 self-tapper needs full material ar
 floor is only 5 thick.
 
 **Not a reason to delay plates 11 and 12.** The bridge itself is correct and on Plate 11; only the
-box's holes are wrong, and the box is not on any plate (see the note at the top of ASSEMBLY.md).
+box's holes were wrong.
+
+### Resolved the same day, because nothing had been printed
+
+The advice above assumed the box existed and the holes would have to be drilled out. Vyom
+confirmed on Nov 24 that **nothing in the base has been printed** - the three of them have done
+every print together, and Siddharth has printed nothing - so the holes could simply be moved
+before anyone printed anything. No drilling, no overlapping pilots, no guide.
+
+`SolidWorks Parts/Print Nov 18/fix_enclosure_pilots.py` translates every vertex within 1.3 mm of
+each of the four pilot axes by +2.0 mm in x, and writes
+`STL/Enclosure corrected (bridge pilots +2mm, D29).STL`. Each pilot is exactly 73 vertices - 36
+on the rim at y 0.5 plus that blind cap's fan centre, 36 on the rim at y 5.0 - so the cylinder
+and its cap move rigidly and only the floor's top face stretches around them. **No triangle is
+added or removed, so watertightness is preserved by construction**, and the nearest vertex
+outside any pilot is 5.77 mm away (6.07 mm in the +x direction) against the 3.25 mm that would
+be needed to fold a triangle over. Facet normals are recomputed from the winding, since the
+stretched floor triangles change plane slightly.
+
+Verified against the original, and the numbers are identical where they should be:
+
+| | original | corrected |
+| --- | --- | --- |
+| triangles | 5042 | 5042 |
+| volume | 265.2573 cm3 | 265.2573 cm3 |
+| watertight | closed, 0 unpaired | closed, 0 unpaired |
+| degenerate triangles | 0 | 0 |
+| smallest triangle | 0.135653 mm2 | 0.135653 mm2 |
+| 8 fork pilots | r 57.1 | unchanged, identical |
+| 4 bridge pilots | x 38.8 / 86.8 | **x 40.8 / 88.8** |
+
+Plate 13 is built from the corrected STL, and the plate was re-checked after the fix: its
+bridge group reads `servo_cx` -20.2, negative, so it is the corrected position and not a
+mirror image.
+
+**`Enclosure.SLDPRT` is still wrong.** This is a mesh correction on a derived file, not a fix
+to the source part. Siddharth still needs to move those four holes in SolidWorks, and until he
+does, re-exporting the STL brings the error straight back - which is why the corrected file is
+named rather than overwriting `Enclosure.STL`, and why the script stays in the repo so the
+correction can be reapplied to a fresh export.

@@ -7,12 +7,12 @@ cover the twelve generated parts; this covers the thirteenth thing the base need
 
 Run with plain python, no cadquery:  python make_plate13.py
 
-READ D29 BEFORE PRINTING THIS. Four of the box's twelve floor pilots - the ones for the servo
-bridge - are 2.0 mm out: they sit at servo_cx -22.2, the pre-D26 SERVO_SHAFT_OFFSET 10.0 position,
-and the current bridge wants -20.2. Printing this plate bakes that error into the part. The eight
-wheel-fork pilots are correct. Either get a corrected Enclosure.SLDPRT from Siddharth first, or
-print this and drill four fresh pilots at x 40.8 / 88.8 in the box frame - and note that a new
-2.5 mm pilot only 2.0 mm from an existing one OVERLAPS it, so the bit will wander without a guide.
+Built from the CORRECTED box, not the raw export. D29 found four of the twelve floor pilots - the
+servo bridge's - sitting 2.0 mm out, at the pre-D26 SERVO_SHAFT_OFFSET 10.0 position. Nothing had
+been printed yet when that turned up, so fix_enclosure_pilots.py moves those four holes instead of
+leaving someone to drill them out afterwards; this script runs it if the corrected STL is missing.
+Enclosure.SLDPRT itself is still wrong and Siddharth still needs to move those holes at the
+source - re-exporting from it would bring the error back.
 
 Orientation: (x, -z, y), a proper +90 deg rotation about X, NOT a mirror - the box is asymmetric
 (the bridge pilots are off-centre), so a reflection would put them on the wrong side. That lands
@@ -28,9 +28,11 @@ sys.argv = ["make_plates.py", ".", "."]          # make_plates.main() reads argv
 sys.path.insert(0, str(HERE))
 import make_plates as mp                          # noqa: E402
 
-STL = HERE.parent / "STL" / "Enclosure.STL"
+import fix_enclosure_pilots as fix                 # noqa: E402
+
+STL = fix.DST
 OUT = HERE / "UltiMaker plates (open in Cura)"
-NAME = "Plate 13 - box (Enclosure, 4 bridge pilots 2 mm out - D29).3mf"
+NAME = "Plate 13 - box (Enclosure, pilots corrected - D29).3mf"
 
 
 def standing_up(t):
@@ -40,7 +42,9 @@ def standing_up(t):
 
 if __name__ == "__main__":
     if not STL.exists():
-        raise SystemExit(f"missing {STL}")
+        print(f"{STL.name} not there yet, building it:")
+        fix.main()
+        print()
     OUT.mkdir(exist_ok=True)
     print(NAME)
     mp.plate(OUT / NAME, [("Box (Enclosure)", STL, 1, standing_up)])
