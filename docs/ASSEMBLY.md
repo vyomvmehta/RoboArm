@@ -15,10 +15,21 @@ box with the 36T planet gear on its horn, so turning the servo walks the planet 
 
 ## Parts
 
-From **Plate 11**: base plate, servo bridge, planet gear, 1 wheel fork.
+From **Plate 11**: base plate, servo bridge, planet gear, 1 wheel fork, 3 elbow spacers.
 From **Plate 12**: lid, 3 wheel forks, sun gear.
-Already printed: Siddharth's `Enclosure` (the box itself).
 Bought: 1 MG996R, 6 × 608ZZ, M8 × 25 bolt + nut, 4 wheel axles, the screws in HARDWARE.md §3–4.
+
+**OPEN — the box itself is on no plate, and nothing in this repo records it as printed.** An
+earlier draft of this file said "already printed"; that was an assumption, not a fact, and it is
+withdrawn. `pack_plates.py` and `make_plates.py` both read only `STL/grap_*.stl`, the parts
+`grap_base_pivot.py` generates, and the `Enclosure` is Siddharth's own SolidWorks part, so it was
+never inside the packing step's scope — `pack_plates.py`'s part list has six entries and the box
+is not one of them. `README.txt`'s "print both and the base is complete" counts only those twelve
+generated parts. Siddharth owns the enclosure under D8's Nov 8 swap, so **ask him whether it is
+printed before planning around it.** If it has to be printed here, note that `STL/Enclosure.STL`
+(committed Nov 24, and the only STL of the box the repo has ever held) shows **no floor pilot
+features at all**, so a box printed from it arrives with none of the 12 pilots stage 1 expects —
+the same question that is already open with Siddharth.
 
 > `Base box.SLDPRT` in `Full Assembly` is `box_standin()` out of the script, **not** Siddharth's
 > real Enclosure: 62 KB of simplified shell against the real part's 410 KB. Do not take any

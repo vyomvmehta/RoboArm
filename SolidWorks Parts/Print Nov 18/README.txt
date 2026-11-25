@@ -14,7 +14,14 @@ top of each other.
 
 WHAT IS LEFT TO PRINT - TWO PLATES
 ==================================
-Twelve parts, 407 cm3 of plastic, two jobs. Print both and the base is complete.
+Twelve parts, 407 cm3 of plastic, two jobs. Print both and every GENERATED base part is done.
+
+THE BOX ITSELF IS NOT ONE OF THEM. Both scripts pack only ..\STL\grap_*.stl, the parts
+grap_base_pivot.py generates, and Siddharth's Enclosure is not a generated part - so no plate
+in this folder contains it and none ever could. Nothing in the repo records it as printed
+either. Ask Siddharth, who owns the enclosure under D8's Nov 8 swap. ..\STL\Enclosure.STL was
+added on Nov 24 and is the only STL of the box the repo has ever held; it shows no floor pilot
+features at all, so a box printed from it needs all 12 pilots drilled.
 
   Plate 11  base plate + servo bridge + planet gear + 1 wheel fork + 3 elbow spacers
             305 x 200 mm of bed, 275 cm3, tallest part 34.5 mm.
