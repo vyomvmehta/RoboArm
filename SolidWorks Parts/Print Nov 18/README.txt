@@ -19,9 +19,9 @@ Twelve parts, 407 cm3 of plastic, two jobs. Print both and every GENERATED base 
 THE BOX ITSELF IS NOT ONE OF THEM. Both scripts pack only ..\STL\grap_*.stl, the parts
 grap_base_pivot.py generates, and Siddharth's Enclosure is not a generated part - so no plate
 in this folder contains it and none ever could. Nothing in the repo records it as printed
-either. Ask Siddharth, who owns the enclosure under D8's Nov 8 swap. ..\STL\Enclosure.STL was
-added on Nov 24 and is the only STL of the box the repo has ever held; it shows no floor pilot
-features at all, so a box printed from it needs all 12 pilots drilled.
+either. Ask Siddharth, who owns the enclosure under D8's Nov 8 swap. ..\STL\Enclosure.STL does
+carry all 12 floor pilots (2.5 dia, blind, 4.5 deep in the 5 mm floor), but four of them are in
+the wrong place - see D29 and the open questions below.
 
   Plate 11  base plate + servo bridge + planet gear + 1 wheel fork + 3 elbow spacers
             305 x 200 mm of bed, 275 cm3, tallest part 34.5 mm.
@@ -96,9 +96,12 @@ The plates are listed at the top. Things worth knowing before any of it goes tog
       horn's tip overhangs by 4.25 mm. With the hub at 14.0 the hub pocket carries the
       torque in shear, so one screw is probably enough. Making both land means growing
       the plate to about radius 27, which then sits over the sun gear with 0.5 mm to spare.
-    - if the 12 floor pilots in Enclosure.SLDPRT were placed against the old bridge, they
-      are 2 mm out now. The Enclosure.STL we hold shows no pilot features at all, so it
-      cannot settle it. Check before drilling or gluing anything.
+    - SETTLED Nov 24, and the answer is yes: four of the 12 floor pilots are 2.0 mm out.
+      The STL does hold all 12. Its four bridge pilots are at x 38.8 / 86.8 in the box
+      frame, which is servo_cx -22.2 - the old SERVO_SHAFT_OFFSET 10.0 position. The
+      bridge now wants 40.8 / 88.8 (servo_cx -20.2). The eight fork pilots are right
+      (radius 55.5, +-13.5). Drill four fresh bridge pilots, or have Siddharth move them.
+      See D29.
 
 Folders 0-3 are the single STLs the arm plates were built from; they duplicate
 ..\STL\Arm Human\ and are kept on Vyom's laptop only, not in the repo.

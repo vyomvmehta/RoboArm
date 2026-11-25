@@ -26,10 +26,10 @@ withdrawn. `pack_plates.py` and `make_plates.py` both read only `STL/grap_*.stl`
 never inside the packing step's scope — `pack_plates.py`'s part list has six entries and the box
 is not one of them. `README.txt`'s "print both and the base is complete" counts only those twelve
 generated parts. Siddharth owns the enclosure under D8's Nov 8 swap, so **ask him whether it is
-printed before planning around it.** If it has to be printed here, note that `STL/Enclosure.STL`
-(committed Nov 24, and the only STL of the box the repo has ever held) shows **no floor pilot
-features at all**, so a box printed from it arrives with none of the 12 pilots stage 1 expects —
-the same question that is already open with Siddharth.
+printed before planning around it.** `STL/Enclosure.STL` reached this branch on Nov 24 and does
+carry all 12 floor pilots, Ø2.5 blind, bottoming 4.5 into the 5 mm floor — but four of them are
+in the wrong place; see stage 1 and D29. (`main` has had the same STL since before this branch
+forked, byte for byte.)
 
 > `Base box.SLDPRT` in `Full Assembly` is `box_standin()` out of the script, **not** Siddharth's
 > real Enclosure: 62 KB of simplified shell against the real part's 410 KB. Do not take any
@@ -46,10 +46,13 @@ the same question that is already open with Siddharth.
       65–75. Early versions had three; the fourth was added for the 180° position.
 - [ ] Check the **12 floor pilots**: 2.5 mm Ø, 4.5 deep, blind. Eight for the wheel forks at
       radius 55.5, ±13.5 either side of each slot centreline; four for the servo bridge.
-- [ ] **OPEN — the bridge's four pilots may be 2 mm out.** `SERVO_SHAFT_OFFSET` changed from 10.0
-      to 8.0 on Nov 22 and carried the bridge with it. Offer the bridge up dry before trusting
-      them; if they miss, drill fresh ones and ignore the originals. The fork pilots are
-      unaffected.
+- [ ] **The bridge's four pilots ARE 2.0 mm out — measured, not suspected (D29).** Read off
+      `STL/Enclosure.STL`: its four bridge pilots sit at x 38.8 and 86.8 in the box frame, which
+      is `servo_cx` -22.2, the old `SERVO_SHAFT_OFFSET` 10.0 position. The bridge now wants 40.8
+      and 88.8 (`servo_cx` -20.2). So **drill four fresh pilots 2.0 mm further from the -x wall**
+      and ignore the originals, or have Siddharth move them in the box.
+- [ ] The **eight fork pilots are correct** — radius 55.5, ±13.5 either side of each slot
+      centreline, exactly as specified. Use them as they are.
 - [ ] Confirm the pilots are **blind**. Nothing may poke through the 5 mm floor — the underside
       runs on the track.
 

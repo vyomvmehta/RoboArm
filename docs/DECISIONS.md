@@ -417,8 +417,9 @@ straight 6.0-wide pocket touches at the hub and the tip only, which is fine.
 2. `SERVO_SHAFT_OFFSET` 10.0 -> 8.0 moved the servo 2 mm (`servo_cx` -22.2 -> -20.2). Good:
    the bridge pilot foot that sat 0.51 mm inside `SLOT_R_IN` is now 1.92 mm clear. Bad: if the
    12 floor pilots in `Enclosure.SLDPRT` were placed against the old bridge they are 2 mm out.
-   Not confirmable from the `Enclosure.STL` we hold - it shows no pilot features at all, so it
-   either predates them or they never reached the STL. Check with Siddharth.
+   **Confirmed 2026-11-24 (D29): they are.** The STL does hold all 12 pilots - the earlier
+   "no pilot features at all" reading was wrong - and its four bridge pilots are at the old
+   -22.2 position, 2.0 mm from where the current bridge wants them.
 
 **Print set.** Plate 6 is rebuilt and now holds all seven unprinted mechanism parts in one
 job, 297 x 145 mm: planet gear, servo bridge, 4 wheel forks, sun gear. The servo bridge is on
@@ -507,3 +508,47 @@ Also fixed in the same pass: the assembly note at the bottom of `arm.yaml` said 
 with the servo at **1500 µs**. `config/calibration.yaml` has said `center_us: 1475` for every
 joint since it was written, and says "not 1500" in as many words. The note was simply stale, and
 it is the note a person reads while holding a servo. Now 1475.
+
+## D29: the box's four bridge pilots are 2.0 mm out, measured off the STL (2026-11-24, Claude measured, Siddharth to action)
+
+D26 left this open as "not confirmable from the `Enclosure.STL` we hold - it shows no pilot
+features at all". That reading was wrong. The STL does carry all 12 floor pilots, and reading
+their positions out of the mesh settles the question: **four of the twelve are 2.0 mm out.**
+
+**How it was measured.** `SolidWorks Parts/STL/Enclosure.STL` is a 5042-triangle binary STL in the
+Enclosure's own SolidWorks frame - Y up, box corner on the origin, so the 170 mm square lies in X-Z
+and the box bottom is at Y 0. Clustering its vertices by Y plane and testing each cluster for
+circularity finds, at **Y = 0.5**, exactly twelve circular profiles of radius 1.25 mm, each 37
+vertices (36 on the rim plus a centre). Y = 0.5 is the blind bottom of a 4.5 mm pilot in a 5 mm
+floor, and 12 x 37 = 444 is the entire vertex count on that plane, so those twelve profiles are
+all of it and nothing else sits there. PILOT_D is 2.5 and PILOT_DEPTH 4.5, which is what r 1.25 at
+Y 0.5 is.
+
+**The eight fork pilots are right.** Their centres sit at radius 55.5 from the box axis, offset
++-13.5 either side of each of the four slot centrelines - `FORK_SCREW_R` 55.5 and `FORK_SCREW_Y`
+13.5 exactly. Use them as drilled.
+
+**The four bridge pilots are not.** `floor_pilots()` puts them at `servo_cx +- 24`, `+-45`, and
+`bridge_part()` uses the same `x0, x1 = servo_cx -+ 32`. The STL's four are at X 38.8 and 86.8 in
+the box frame, Z 40 and 130: a 48 x 90 footprint, which matches, centred on X 62.8. The box centre
+is 85, so the STL's `servo_cx` is **-22.2**.
+
+| `SERVO_SHAFT_OFFSET` | `servo_cx` | bridge pilots, box frame |
+| --- | --- | --- |
+| 10.0 (before Nov 22) | -22.2 | **38.8 / 86.8** - what the STL has |
+| 8.0 (measured Nov 22, D26) | -20.2 | 40.8 / 88.8 - what the bridge needs |
+
+`servo_cx = -centre_dist + SERVO_L / 2 - SERVO_SHAFT_OFFSET` = -32.5 + 20.3 - 8.0 = -20.2 now. So
+the box was drilled against the pre-D26 bridge and the four pilots are **2.0 mm too close to the
+-x wall**. The 2 mm is the whole of the offset change; nothing else moved.
+
+**What to do.** Either Siddharth moves those four pilots +2.0 mm in X in `Enclosure.SLDPRT`, or
+whoever assembles drills four fresh pilots at 40.8 / 88.8 and ignores the originals. The holes are
+2.5 mm blind pilots in a 5 mm floor, 48 mm apart, so a fresh set 2 mm away does not break into the
+old one - it overlaps it, which is worth knowing before drilling: expect the bit to wander into the
+existing hole. Clamp a guide, or print the box again from a corrected part. Do **not** enlarge the
+existing pilots to span both positions; an M3 self-tapper needs full material around it and the
+floor is only 5 thick.
+
+**Not a reason to delay plates 11 and 12.** The bridge itself is correct and on Plate 11; only the
+box's holes are wrong, and the box is not on any plate (see the note at the top of ASSEMBLY.md).
